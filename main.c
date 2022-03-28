@@ -52,49 +52,79 @@
 
 #include "raylib.h"
 
+#define MAX_COLORS_COUNT    21 
+
 int main(void)
 {
-    // Initialization
-    //--------------------------------------------------------------------------------------
-    const int screenWidth = 1280;
-    const int screenHeight = 720;
+   // Initialization
+   //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   const int screenWidth = 800;
+   const int screenHeight = 600;
 
-    InitWindow(screenWidth, screenHeight, "raylib [core] example - basic window");
+   InitWindow(screenWidth, screenHeight, "raylib [core] example - basic window");
 
-    // TODO: Load resources / Initialize variables at this point
+   // TODO: Load resources / Initialize variables at this point
 
-    SetTargetFPS(60);
-    //--------------------------------------------------------------------------------------
+   //fontes
+   Font fonte = LoadFont("resources/fonts/alagard.png");
 
-    // Main game loop
-    while (!WindowShouldClose())    // Detect window close button or ESC key
-    {
-        // Update
-        //----------------------------------------------------------------------------------
-        // TODO: Update variables / Implement example logic at this point
-        //----------------------------------------------------------------------------------
+   //cores
+   Color colors[MAX_COLORS_COUNT] = {
+      DARKGRAY, MAROON, ORANGE, DARKGREEN, DARKBLUE, DARKPURPLE, DARKBROWN,
+      GRAY, RED, GOLD, LIME, BLUE, VIOLET, BROWN, LIGHTGRAY, PINK, YELLOW,
+      GREEN, SKYBLUE, PURPLE, BEIGE };
 
-        // Draw
-        //----------------------------------------------------------------------------------
-        BeginDrawing();
+   const char *colorNames[MAX_COLORS_COUNT] = {
+      "DARKGRAY", "MAROON", "ORANGE", "DARKGREEN", "DARKBLUE", "DARKPURPLE",
+      "DARKBROWN", "GRAY", "RED", "GOLD", "LIME", "BLUE", "VIOLET", "BROWN",
+      "LIGHTGRAY", "PINK", "YELLOW", "GREEN", "SKYBLUE", "PURPLE", "BEIGE" };
 
-            ClearBackground(RAYWHITE);
+   Texture2D PowPow = LoadTexture("./public/logo_menu_transparente.png");
 
-            // TODO: Draw everything that requires to be drawn at this point:
+   SetTargetFPS(60);
+   //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-            DrawText("Hello World!", 500, 400, 100, RED);  // Example
+   // Main game loop
+   while (!WindowShouldClose())    // Detect window close button or ESC key
+   {
+      // Update
+      ///%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      // TODO: Update variables / Implement example logic at this point
+      //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        EndDrawing();
-        //----------------------------------------------------------------------------------
-    }
+      // Draw
+      //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      BeginDrawing();
 
-    // De-Initialization
-    //--------------------------------------------------------------------------------------
+         ClearBackground(BLACK);
 
-    // TODO: Unload all loaded resources at this point
+         //Menu
+         //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    CloseWindow();        // Close window and OpenGL context
-    //--------------------------------------------------------------------------------------
+            DrawTexture(PowPow, 200, 30,RAYWHITE);
+
+            DrawText("Novo Jogo", 280, 250, 40, ORANGE);
+            DrawText("Continuar", 280, 300, 40, ORANGE);
+            DrawText("Carregar mapa", 280, 350, 40, ORANGE);
+            DrawText("Ranking", 280, 400, 40, ORANGE);
+            DrawText("Sair", 280, 550, 40, ORANGE);
+     
+
+         // TODO: Draw everything that requires to be drawn at this point:
+
+              
+
+      EndDrawing();
+      //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   }
+
+   // De-Initialization
+   //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+   // TODO: Unload all loaded resources at this point
+
+   CloseWindow();        // Close window and OpenGL context
+   //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     return 0;
 }
