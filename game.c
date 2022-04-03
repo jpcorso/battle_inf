@@ -1,9 +1,6 @@
 #include "raylib.h"
 
-#define PHYSAC_IMPLEMENTATION
-#include "extras/physac.h"
-
-#define VELOCITY    2.5f
+#define VELOCITY    20.0f
 
 int main(void){
 
@@ -14,8 +11,13 @@ int main(void){
 
     InitWindow(screenWidth, screenHeight, "raylib [core] example - basic window");
 
-    Vector2 tankPosition = {(float)screenWidth/2, (float)screenHeight/2};
-    Vector2 size = {(float)20, (float)20};
+    Vector2 tankPosition = {(float)screenWidth/2, (float)screenHeight/2}; //posição inicial do tanque
+
+    Vector2 size = {(float)20, (float)20}; //tamanho do retangulo
+
+    Texture2D tank = LoadTexture("./public/tank.png");
+    Texture2D tijolo = LoadTexture("./public/tijolo.png");
+    Texture2D coluna_tijolo = LoadTexture("./public/coluna_tijolo.png");
 
     SetTargetFPS(60);
     //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -25,10 +27,10 @@ int main(void){
     {
        
 
-        if (IsKeyDown(KEY_RIGHT)) tankPosition.x += 2.0f;
-        if (IsKeyDown(KEY_LEFT)) tankPosition.x -= 2.0f;
-        if (IsKeyDown(KEY_UP)) tankPosition.y -= 2.0f;
-        if (IsKeyDown(KEY_DOWN)) tankPosition.y += 2.0f;
+        if (IsKeyDown(KEY_RIGHT)) tankPosition.x += 3.5f;
+        if (IsKeyDown(KEY_LEFT)) tankPosition.x -= 3.5f;
+        if (IsKeyDown(KEY_UP)) tankPosition.y -= 3.5f;
+        if (IsKeyDown(KEY_DOWN)) tankPosition.y += 3.5f;
 
         // Draw
         //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -36,10 +38,29 @@ int main(void){
 
             ClearBackground(BLACK);
 
-        DrawRectangleV(tankPosition,size, GREEN);
+        DrawTexture(tijolo, 200, 100, RAYWHITE);
+        DrawTexture(tijolo, 230, 120, RAYWHITE);
 
-        bool CheckCollisionRecs(tankPosition, Window);
 
+
+        DrawTexture(tijolo, 20, 50, RAYWHITE);
+        DrawTexture(coluna_tijolo, 20, 100, RAYWHITE);
+        DrawTexture(coluna_tijolo, 90, 100, RAYWHITE);
+        DrawTexture(tijolo, 70, 300, RAYWHITE);
+
+        DrawTextureV(tank, tankPosition, GREEN);
+
+        Rectangle limite = {0, 0, 780, 580};
+
+        if (CheckCollisionPointRec(tankPosition, limite))
+        {
+
+        }
+        else{
+            tankPosition.x *= -1;
+            tankPosition.y *= -1;
+        }
+        
         EndDrawing();
         //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    }
