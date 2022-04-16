@@ -1,0 +1,176 @@
+
+
+
+
+
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="Content-Security-Policy" content="default-src 'self'; http://mpag.bb.com.br/">
+	<title>[bb.com.br] - Comércio Eletrônico - Meios de Pagamento</title>
+	<style>
+		TD { font-family: Arial,Tahoma,Verdana,Trebuchet MS; font-size: 12px; color: #000084; }
+		TD.data { font-family: Arial,Tahoma,Verdana,Trebuchet MS; font-size: 12px; color: #000000; }
+		A, A:hover, A:visited { font-family: Arial,Tahoma,Verdana,Trebuchet MS; font-size: 11px; font-weight: Bold; text-decoration: None; color: #000084; }
+		A.voltar, A.voltar:hover, A.voltar:visited { font-family: Arial,Tahoma,Verdana,Trebuchet MS; font-size: 11px; font-weight: Normal; text-decoration: None; color: #848284; }
+	</style>
+
+	
+		<script language="javascript" src="inc/formatadadosns3.js"></script>
+		<link rel="stylesheet" type="text/css" href="inc/bb_ns.css">
+	
+
+</head>
+
+<body bgcolor="#ffffff" topmargin="0" leftmargin="0" rightmargin="0" bottommargin="0" marginwidth="0" marginheight="0">
+
+<div class="divBarraFull" bgcolor="#F8D117">
+	<div class="divCentroLayout">
+
+		<div class="container">
+
+			<div class="logo">
+				<a href="http://www.bb.com.br/" target="_Blank">
+					<img src="img/imgLogoBB.jpg" alt="Banco do Brasil" border="0"/>
+				</a>
+			</div>
+
+			<div class="tituloPagina">
+				<p style="text-align:center;">Comércio Eletrônico - Meios de Pagamento</p>
+			</div>
+
+			<div class="contador">
+				<div id="cronometro_div" align="left">
+					<p><strong style="font-family:Arial,Tahoma,Trebuchet MS;font-size:13px;color:#000084;">Sua sessão expira em:<span strong style="font-family:Arial,Tahoma,Trebuchet MS;font-size:13px;color:#000084;" id="cronometro"></span></p>
+				</div>
+				<Script language="javascript">
+                    var minutos=7
+                    var seconds=30
+                    var campo = document.getElementById("cronometro");
+                    var campo_div = document.getElementById("cronometro_div");
+
+                    function startCountdown()
+                    {
+                        if (seconds<=0){
+                            seconds=60;
+                            minutos-=1;
+                        }
+                        if (minutos<=-1){
+                            seconds=0;
+                            seconds+=1;
+                            //campo.innerHTML="";
+                            //campo_div.innerHTML="Sessao expirada!";
+                            location.href = "/site/mpag/redirect.jsp"
+
+
+                        } else{
+                            seconds-=1
+                            if(seconds < 10) {
+                                seconds = "0" + seconds;
+                            }
+                            campo.innerHTML = " " + minutos+"min"+seconds;
+                            setTimeout("startCountdown()",1000);
+                        }
+                    }
+                    startCountdown();
+				</Script>
+			</div>
+
+		</div>
+
+	</div>
+</div>
+
+
+<a name="topo"></a>
+<div class="divTesteiraInferior">
+	<div id="divTopLeft"></div>
+	<div id="divTopRight"></div>
+	<div class="divCentroLayout">
+		<table width="100%" height="100%" cellpadding="0" cellspacing="0" border="0">
+			<tr>
+				<td height="42" colspan="2"></td>
+			</tr>
+			<tr>
+				<td></td>
+				<td valign="top">
+					<table width="100%" height="100%" cellpadding="0" cellspacing="0" border="0">
+						<tr>
+							<td width="18"><img src="img/dot.gif" alt="" width="18" height="1" border="0"></td>
+							<td align="left" valign="top">
+								<table width="460" cellpadding="0" cellspacing="0" border="0">
+									<tr>
+										<td><!-- TRANSACAO -->
+
+<form action="mpagEncerra.jsp" method="POST" name="form" autocomplete="off">
+
+	<table>
+	
+		<tr>
+			<td>
+				<p><font face="arial" size="4" color="ff0000"><b>Atenção!</b></font></p>
+			</td>
+		</tr>
+	
+		<tr>
+			<td>
+				<p><font face="arial" size="2" color="ff0000"><b>Os dados enviados pela loja apresentaram os seguintes problemas:</b></font></p>
+			</td>
+		</tr>
+	
+	
+		<tr>
+			<td>
+				<ul>
+				
+					<li><font face="arial" color="red">Número da Transação (refTran), deve ser informado. </font></li>
+				
+					<li><font face="arial" color="red">Campo Data de Vencimento (dtVenc) não informada.</font></li>
+				
+					<li><font face="arial" color="red">Campo Valor deve ser informado. </font></li>
+				
+					<li><font face="arial" color="red">Campo Número do Convênio (idConv) deve ser informado.</font></li>
+				
+					<li><font face="arial" color="red">Convênio/identificador não informado(s). (C001-000)</font></li>
+				
+				</ul>
+			</td>
+		</tr>	
+	
+		
+		<tr>
+			<td valign="bottom" align="left">
+
+				
+<input type="image" name="botaoVoltarParaLoja" src="img/btVoltarParaLoja.gif">
+
+
+			
+			</td>
+		</tr>
+		
+	</table>
+	
+</form>
+
+
+
+
+											</td>
+										</tr>
+									</table>
+								</td>
+								<td width="18"><img src="/img/dot.gif" alt="" width="18" height="1" border="0"></td>
+							</tr>
+						</table>
+					</td>
+				</tr>
+			</table>
+<!-- 			Centro Testeira -->		
+			</div>
+<!-- 			Testeira Inferior -->
+			</div>
+
+	</body>
+</html>
