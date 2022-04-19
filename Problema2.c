@@ -25,7 +25,8 @@ int main(void) {
     init(&jog);
 
     //texturas
-    Texture2D tanquePlayer = LoadTexture("./public/tanque_player_menor.png"); 
+    Texture2D tanquePlayer = LoadTexture("./public/tanque_player_menor.png");
+   
 
     int frameWidth = tanquePlayer.width;
     int frameHeight = tanquePlayer.height;
@@ -38,6 +39,8 @@ int main(void) {
 
     // Origin of the texture (rotation/scale point), it's relative to destination rectangle size
     Vector2 origin = { (float)frameWidth, (float)frameHeight };
+
+    Vector2 Posicao = {(float)SCREEN_WIDTH/2.0f, (float)SCREEN_HEIGHT/2.0f};
 
     SetTargetFPS(60);               // Set our game to run at 60 frames-per-second
     //--------------------------------------------------------------------------------------
@@ -58,11 +61,11 @@ int main(void) {
 void init (Jogador *jog){
     jog->Posicao = (Vector2) {
         (float)SCREEN_WIDTH/2, (float)SCREEN_HEIGHT/2
-    };
+    };   
     jog->Tamanho = (Vector2){
         50, 50
     };
-    }
+}
 
 void update (Jogador *jog, Texture2D tanquePlayer, Rectangle sourceRec, Rectangle destRec, Vector2 origin) {
     if (IsKeyDown(KEY_RIGHT) && jog->Posicao.x+jog->Tamanho.x < SCREEN_WIDTH) {
@@ -71,21 +74,21 @@ void update (Jogador *jog, Texture2D tanquePlayer, Rectangle sourceRec, Rectangl
     }
     else{
         if (IsKeyDown(KEY_LEFT) && jog->Posicao.x >= 0){
-            DrawTexturePro(tanquePlayer, sourceRec, destRec, origin, (float)270, RAYWHITE);
+            //DrawTexturePro(tanquePlayer, sourceRec, destRec, origin, (float)270, RAYWHITE);
             jog->Posicao.x -= 4.0f;
     }
         else{
             if (IsKeyDown(KEY_UP) && jog->Posicao.y >= 0){
-                DrawTexturePro(tanquePlayer, sourceRec, destRec, origin, (float)0, RAYWHITE);
+                //DrawTexturePro(tanquePlayer, sourceRec, destRec, origin, (float)0, RAYWHITE);
                 jog->Posicao.y -= 4.0f;
             }
             else{
                 if (IsKeyDown(KEY_DOWN) && jog->Posicao.y+jog->Tamanho.y < SCREEN_HEIGHT){
-                    DrawTexturePro(tanquePlayer, sourceRec, destRec, origin, (float)180, RAYWHITE);
+                    //DrawTexturePro(tanquePlayer, sourceRec, destRec, origin, (float)180, RAYWHITE);
                     jog->Posicao.y += 4.0f;
                 }
                 else{
-                    DrawTexturePro(tanquePlayer, sourceRec, destRec, origin, (float)90, RAYWHITE);
+                    //DrawTexturePro(tanquePlayer, sourceRec, destRec, origin, (float)90, RAYWHITE);
                 }
     
             }
@@ -99,7 +102,7 @@ void draw (Jogador jog, Texture2D tanquePlayer,  Rectangle sourceRec, Rectangle 
 
     ClearBackground(RAYWHITE);
 
-    
+        DrawTexturePro(tanquePlayer, sourceRec, destRec, origin, (float)90, RAYWHITE);
 
     EndDrawing();
 }
