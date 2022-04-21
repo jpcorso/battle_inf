@@ -11,6 +11,12 @@ typedef struct {
     int Municao;
     int Vidas;
     int Pontos;
+
+    bool left;
+    bool right;
+    bool up;
+    bool down;
+
 } Jogador;
 
 void init(Jogador*);
@@ -70,32 +76,43 @@ void init (Jogador *jog){
 void update (Jogador *jog, Texture2D tanquePlayer, Rectangle sourceRec, Rectangle destRec, Vector2 origin) {
     if (IsKeyDown(KEY_RIGHT) && jog->Posicao.x+jog->Tamanho.x < SCREEN_WIDTH) {
         DrawTexturePro(tanquePlayer, sourceRec, destRec, origin, (float)90, RAYWHITE);
-        jog->Posicao.x += 4.0f;
+        jog->Posicao.x = jog->Posicao.x + 3.5;        
+        jog->right = true;
+        jog->left = false;
+        jog->up = false;
+        jog->down = false;
     }
+    else if (IsKeyDown(KEY_LEFT) && jog->Posicao.x >= 0){
+        DrawTexturePro(tanquePlayer, sourceRec, destRec, origin, (float)270, RAYWHITE);
+        jog->Posicao.x = jog->Posicao.x - 3.5;
+        jog->right = false;
+        jog->left = true;
+        jog->up = false;
+        jog->down = false;
+    }
+
+    else if (IsKeyDown(KEY_UP) && jog->Posicao.y >= 0){
+        DrawTexturePro(tanquePlayer, sourceRec, destRec, origin, (float)0, RAYWHITE);
+        jog->Posicao.y = jog->Posicao.y - 3.5;
+        jog->right = false;
+        jog->left = false;
+        jog->up = true;
+        jog->down = false;
+    }
+
+    else if (IsKeyDown(KEY_DOWN) && jog->Posicao.y+jog->Tamanho.y < SCREEN_HEIGHT){
+        DrawTexturePro(tanquePlayer, sourceRec, destRec, origin, (float)180, RAYWHITE);
+        jog->Posicao.y = jog->Posicao.y + 3.5;
+        jog->right = false;
+        jog->left = false;
+        jog->up = false;
+        jog->down = true;
+    }
+
     else{
-        if (IsKeyDown(KEY_LEFT) && jog->Posicao.x >= 0){
-            //DrawTexturePro(tanquePlayer, sourceRec, destRec, origin, (float)270, RAYWHITE);
-            jog->Posicao.x -= 4.0f;
-    }
-        else{
-            if (IsKeyDown(KEY_UP) && jog->Posicao.y >= 0){
-                //DrawTexturePro(tanquePlayer, sourceRec, destRec, origin, (float)0, RAYWHITE);
-                jog->Posicao.y -= 4.0f;
-            }
-            else{
-                if (IsKeyDown(KEY_DOWN) && jog->Posicao.y+jog->Tamanho.y < SCREEN_HEIGHT){
-                    //DrawTexturePro(tanquePlayer, sourceRec, destRec, origin, (float)180, RAYWHITE);
-                    jog->Posicao.y += 4.0f;
-                }
-                else{
-                    //DrawTexturePro(tanquePlayer, sourceRec, destRec, origin, (float)90, RAYWHITE);
-                }
-    
-            }
-        }
+        DrawTexturePro(tanquePlayer, sourceRec, destRec, origin, (float)90, RAYWHITE);
     }
 }
-   
 
 void draw (Jogador jog, Texture2D tanquePlayer,  Rectangle sourceRec, Rectangle destRec, Vector2 origin) {
     BeginDrawing();

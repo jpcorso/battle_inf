@@ -75,9 +75,7 @@ void update (Jogador *jog) {
                     jog->Posicao.y += 3.5f;
                 }
                 else{
-                    if (IsKeyDown(KEY_SPACE)){
-                        DrawRectangleV(jog->Posicao, )
-                    }
+                    
                 }
             }
         }
@@ -87,23 +85,12 @@ void update (Jogador *jog) {
 void draw (Jogador jog) {
     BeginDrawing();
 
-    FILE *pontText;
-    char tijolosText[100];
-
-    pontText = fopen("/home/jpcorso/projetos/programas/battle_inf/mapas/mapa1", tijolosText);
-
-
     ClearBackground(RAYWHITE);
 
     DrawText("Mova o jogador com as setinhas do teclado", 10, 10, 20, DARKGRAY);
 
-    if(pontText == '#'){
-        DrawRectangle(30, 60, 20, 20, ORANGE);
-    }
 
     DrawRectangleV(jog.Posicao, jog.Tamanho, MAROON);
-
-    fclose(pontText);
 
     EndDrawing();
 }

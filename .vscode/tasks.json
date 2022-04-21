@@ -1,0 +1,10 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "type": "shell",
+            "command": "cc -o jogo_teste.out jogo_teste.c -lraylib -lGL -lm -lpthread -ldl -lrt -lX11"
+        }
+    ]
+}
