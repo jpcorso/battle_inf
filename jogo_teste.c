@@ -16,6 +16,8 @@ typedef struct
     bool up;
     bool down;
 
+    float rotation;
+
 }JOGADOR;
 
 typedef struct
@@ -39,14 +41,14 @@ typedef struct
 }TIJOLOS;
 
 void desenha_texturas(TIJOLOS*);
-void movimento_jogador(JOGADOR*);
-void draw(JOGADOR*, PROJETIL[]);
+void movimento_jogador(JOGADOR*, float rotation);
+void draw(JOGADOR*, PROJETIL[], float rotation);
 
 void movimento_projetil(JOGADOR*, PROJETIL[]);
 
 int main(void)
 {
-
+    float rotation;
     TIJOLOS tij;
     JOGADOR player;
     PROJETIL bullets[MAX_PROJETEIS];
@@ -73,10 +75,10 @@ int main(void)
 
     while(!WindowShouldClose())
     {
-        movimento_jogador(&player);
+        movimento_jogador(&player, rotation);
         movimento_projetil(&player, bullets);
-        draw(&player, bullets);
-        desenha_texturas(&tij);
+        draw(&player, bullets, rotation);
+        //desenha_texturas(&tij);
 
     }
 
@@ -85,39 +87,44 @@ int main(void)
 
 }
 
-void movimento_jogador(JOGADOR *player)
+void movimento_jogador(JOGADOR *player, float rotation)
 {
-    if(IsKeyDown(KEY_RIGHT))
+
+    if(IsKeyDown(KEY_RIGHT) && player->posicao.x+player->size.x<SCREEN_WIDTH)
     {
         player->posicao.x = player->posicao.x + 3.5;
         player->right = true;
         player->left = false;
         player->up = false;
         player->down = false;
+        rotation = 90;
     }
-    else if (IsKeyDown(KEY_LEFT))
+    else if (IsKeyDown(KEY_LEFT) && player->posicao.x >= 0)
     {
         player->posicao.x = player->posicao.x - 3.5;
         player->right = false;
         player->left = true;
         player->up = false;
         player->down = false;
+        rotation = 270;
     }
-    else if (IsKeyDown(KEY_UP))
+    else if (IsKeyDown(KEY_UP) && player->posicao.y >= 0)
     {
         player->posicao.y = player->posicao.y - 3.5;
         player->right = false;
         player->left = false;
         player->up = true;
         player->down = false;
+        rotation = 0;
     }
-    else if (IsKeyDown(KEY_DOWN))
+    else if (IsKeyDown(KEY_DOWN) && player->posicao.y+player->size.y<SCREEN_HEIGHT)
     {
         player->posicao.y = player->posicao.y + 3.5;
         player->right = false;
         player->left = false;
         player->up = false;
         player->down = true;
+        rotation = 180;
     }
 }
 
@@ -126,6 +133,7 @@ void desenha_texturas(TIJOLOS *tij){
     BeginDrawing();
 
     Texture2D tijolos = LoadTexture("public/brick_texture2.png");
+
     Rectangle tijolosRec = (Rectangle){
         0,0,tijolos.width,tijolos.height
     };
@@ -147,20 +155,35 @@ void desenha_texturas(TIJOLOS *tij){
                 if(tijolosText[i] == '#'){
                     DrawTextureRec(tijolos, tijolosRec, tij->posicao, RAYWHITE);
                 }
+            }
                     tij->posicao.x = 0;
-                tij->posicao.y += tijolos.height;
-            }  
+                tij->posicao.y += tijolos.height; 
         }
 
     EndDrawing();
 
 }
 
-void draw(JOGADOR *player, PROJETIL bullets[])
+void draw(JOGADOR *player, PROJETIL bullets[], float rotation)
 {
+
+    /*//Load tank texture
+    Texture2D tanquePlayer = LoadTexture("public/tanque_player_menor.png");
+     // Source rectangle (part of the texture to use for drawing)
+
+    int frameHeight = tanquePlayer.width;
+    int frameWidth = tanquePlayer.height;
+
+    Rectangle sourceRec = { 0.0f, 0.0f, frameWidth, frameHeight};
+    // Destination rectangle (screen rectangle where drawing part of texture)
+    Rectangle destRec = {SCREEN_WIDTH/2, SCREEN_HEIGHT/2, frameWidth*2.0f, frameHeight*2.0f};
+    // Origin of the texture (rotation/scale point), it's relative to destination rectangle size
+    Vector2 origin = { (float)frameWidth, (float)frameHeight };*/
+
     BeginDrawing();
         ClearBackground(RAYWHITE);
         DrawRectangleV(player->posicao, player->size, MAROON);
+        //DrawTexturePro(tanquePlayer, sourceRec, destRec, origin, rotation, RAYWHITE);
         for(int i = 0; i < MAX_PROJETEIS; i++)
         {
             if(bullets[i].ativo)
