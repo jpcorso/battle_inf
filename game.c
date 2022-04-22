@@ -115,8 +115,8 @@ int main(void){
 
         Rectangle retangulo_tijolo = {70, 300, 40, 25};
 
-        /*if ((tankPosition.x >= (GetScreenWidth() - 10)) || (tankPosition.x <= 10)) tankPosition.x *= -1.0f;
-        if ((tankPosition.y >= (GetScreenHeight() - 10)) || (tankPosition.y <= 10)) tankPosition.y *= -1.0f;*/
+        /*if ((tankPosition.x >= (GetScreenWidth() - player)) || (tankPosition.x <= 10)) tankPosition.x *= -1.0f;
+        if ((tankPosition.y >= (GetScreenHeight() - player)) || (tankPosition.y <= 10)) tankPosition.y *= -1.0f;*/
 
         //Checa colisão entre tanque e retangulo do limite
         /*if (CheckCollisionPointRec(tankPosition, limite)){
