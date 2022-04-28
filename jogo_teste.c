@@ -74,6 +74,7 @@ typedef struct
 void coloca_tijolo(TIJOLOS[][COLUNAS]);
 
 // essa funcao calcula e atualiza o movimento do jogador
+
 void movimento_jogador(JOGADOR*, TIJOLOS[][COLUNAS], CELULA*);
 
 // Essa funcao desenha o jogo
@@ -87,6 +88,7 @@ void celulasEnergia(CELULA*, JOGADOR*);
 
 // Essa funçao verifica colisao entre o player e tijolos
 bool verifica_colisao_player(JOGADOR*, TIJOLOS[][COLUNAS]);
+
 
 //Essa funcao verifica colisao entre os tijolos e os projeteis
 bool verifica_colisao_projetil(PROJETIL[], TIJOLOS[][COLUNAS]);
@@ -108,6 +110,7 @@ int main(void)
     // Inicializacao do jogador
     player.posicao = (Vector2) {(float)SCREEN_WIDTH / 2 , (float)SCREEN_HEIGHT / 2};
     player.posicao_backup = (Vector2) {(float)SCREEN_WIDTH / 2 , (float)SCREEN_HEIGHT / 2};
+
     player.size = (Vector2) {50 , 50};
     player.velocidade = 3.5f;
     player.player_rec.x = (float)SCREEN_WIDTH / 2;
@@ -180,6 +183,7 @@ int main(void)
     // Loop do jogo
     while(!WindowShouldClose())
     {
+
         movimento_jogador(&player, tij, &energia);
         movimento_projetil(&player, bullets, tij);
         coloca_tijolo(tij);
@@ -210,6 +214,7 @@ void celulasEnergia(CELULA *energia, JOGADOR *player){
 
 // Calcula se o player esta indo para direita, esquerda, cima ou baixo
 void movimento_jogador(JOGADOR *player, TIJOLOS tij[][COLUNAS], CELULA *energia)
+
 {
 
     Texture2D tanquePlayer = LoadTexture("public/tanque_player.png");
@@ -226,11 +231,12 @@ void movimento_jogador(JOGADOR *player, TIJOLOS tij[][COLUNAS], CELULA *energia)
         else{
             player->posicao.x = player->posicao.x + player->velocidade;
         }
+
         player->right = true;
         player->left = false;
         player->up = false;
         player->down = false;
-
+      
         rotation = 90;
 
         player->player_rec.x = player->posicao.x;
@@ -245,12 +251,12 @@ void movimento_jogador(JOGADOR *player, TIJOLOS tij[][COLUNAS], CELULA *energia)
             player->player_rec.y = player->posicao_backup.y;
         }
 
-
     }
     else if (IsKeyDown(KEY_LEFT) && (player->posicao.x >= 0))
     {
         player->posicao_backup.x = player->posicao.x;
         player->posicao_backup.y = player->posicao.y;
+
 
         if(verifica_colisao_celulas(player, energia)){
             player->posicao.x -= 5.25f;
@@ -258,6 +264,7 @@ void movimento_jogador(JOGADOR *player, TIJOLOS tij[][COLUNAS], CELULA *energia)
         else{
             player->posicao.x = player->posicao.x - player->velocidade;
         }
+
         player->right = false;
         player->left = true;
         player->up = false;
@@ -276,7 +283,6 @@ void movimento_jogador(JOGADOR *player, TIJOLOS tij[][COLUNAS], CELULA *energia)
             player->player_rec.x = player->posicao_backup.x;
             player->player_rec.y = player->posicao_backup.y;
         }
-
     }
     else if (IsKeyDown(KEY_UP) && (player->posicao.y >= 0))
     {
@@ -289,11 +295,12 @@ void movimento_jogador(JOGADOR *player, TIJOLOS tij[][COLUNAS], CELULA *energia)
         else{
             player->posicao.y = player->posicao.y - player->velocidade;
         }
+
         player->right = false;
         player->left = false;
         player->up = true;
         player->down = false;
-
+      
         rotation = 0;
 
         player->player_rec.x = player->posicao.x;
@@ -307,7 +314,6 @@ void movimento_jogador(JOGADOR *player, TIJOLOS tij[][COLUNAS], CELULA *energia)
             player->player_rec.x = player->posicao_backup.x;
             player->player_rec.y = player->posicao_backup.y;
         }
-
 
     }
     else if (IsKeyDown(KEY_DOWN) && (player->posicao.y+player->size.y<SCREEN_HEIGHT))
@@ -331,7 +337,6 @@ void movimento_jogador(JOGADOR *player, TIJOLOS tij[][COLUNAS], CELULA *energia)
         player->player_rec.x = player->posicao.x;
         player->player_rec.y = player->posicao.y;
 
-
         if(verifica_colisao_player(player, tij))
         {
             player->posicao.x = player->posicao_backup.x;
@@ -340,7 +345,6 @@ void movimento_jogador(JOGADOR *player, TIJOLOS tij[][COLUNAS], CELULA *energia)
             player->player_rec.x = player->posicao_backup.x;
             player->player_rec.y = player->posicao_backup.y;
         }
-
     }
 
     DrawTexturePro(
@@ -364,8 +368,6 @@ void draw(JOGADOR *player, PROJETIL bullets[], TIJOLOS tij[][COLUNAS], CELULA *e
         // carregar texturas
         Texture2D tijolo_textura = LoadTexture("public/brick_texture2.png");
         Texture2D celulasText = LoadTexture("public/energy_drop_menor.png");
-        
-
 
         //valores para calcular colisões
         Rectangle tijolosRec = (Rectangle) {0,0,25,40};
@@ -556,6 +558,7 @@ void coloca_tijolo(TIJOLOS tij[][COLUNAS])
 
     }
 }
+
 
 bool verifica_colisao_celulas(JOGADOR *player, CELULA *energia)
 {
