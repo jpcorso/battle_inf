@@ -6,7 +6,7 @@
 
 
 #define SCREEN_WIDTH 1000
-#define SCREEN_HEIGHT 660
+#define SCREEN_HEIGHT 600
 #define MAX_PROJETEIS 1
 #define LINHAS 15
 #define COLUNAS 40 + 1 //Esse +1 pq quando chega no final tem um comando ou algo parecido pra indicar nova linha, por isso antes ficava uma escada
@@ -15,7 +15,10 @@
 typedef struct
 {
     Vector2 posicao;
+    Vector2 posicao_backup;
     Vector2 size;
+    Rectangle player_rec;
+
     bool left;
     bool right;
     bool up;
@@ -31,6 +34,8 @@ typedef struct
 {
     Vector2 posicao;
     Vector2 size;
+    Vector2 posicao_backup;
+    Rectangle bullet_rec;
 
     bool ativo;
 
@@ -46,8 +51,10 @@ typedef struct
 {
     Vector2 posicao;
     Vector2 size;
+    Rectangle tij_rec;
 
     bool ativo;
+    bool atingido_projetil;
     char elemento;
 
 }TIJOLOS;
@@ -57,6 +64,7 @@ typedef struct
 {
     Vector2 posicao;
     Vector2 size;
+    Rectangle energia_rec;
 
     bool alive;
 
@@ -64,21 +72,32 @@ typedef struct
 
 // Essa funcao calcula se determinado bloco deve ser colocado ou nao
 void coloca_tijolo(TIJOLOS[][COLUNAS]);
+
 // essa funcao calcula e atualiza o movimento do jogador
-void movimento_jogador(JOGADOR*, Rectangle);
+void movimento_jogador(JOGADOR*, TIJOLOS[][COLUNAS], CELULA*);
+
 // Essa funcao desenha o jogo
-void draw(JOGADOR*, PROJETIL[], TIJOLOS[][COLUNAS],Vector2 posicao, Vector2 size);
+void draw(JOGADOR*, PROJETIL[], TIJOLOS[][COLUNAS], CELULA*);
+
 // Essa funcao calcula e atualiza o movimento dos projeteis
-void movimento_projetil(JOGADOR*, PROJETIL[]);
+void movimento_projetil(JOGADOR*, PROJETIL[], TIJOLOS[][COLUNAS]);
+
 //Essa função coloca as células de energia
 void celulasEnergia(CELULA*, JOGADOR*);
+
+// Essa funçao verifica colisao entre o player e tijolos
+bool verifica_colisao_player(JOGADOR*, TIJOLOS[][COLUNAS]);
+
+//Essa funcao verifica colisao entre os tijolos e os projeteis
+bool verifica_colisao_projetil(PROJETIL[], TIJOLOS[][COLUNAS]);
+
+//Essa funcao verifica colisao entre o player e as celulas
+bool verifica_colisao_celulas(JOGADOR* , CELULA*);
 
 int main(void)
 {
     // Inicializar o array que vai armazenar a string do mapa do jogo
     char tijolosText[600 + 15]; // Esses +15 por causa daquele comando de nova linha
-
-    Rectangle tijolosRec = (Rectangle) {0,0,25,40};
 
     // Variaveis utilizadas
     TIJOLOS tij[LINHAS][COLUNAS];
@@ -88,11 +107,19 @@ int main(void)
 
     // Inicializacao do jogador
     player.posicao = (Vector2) {(float)SCREEN_WIDTH / 2 , (float)SCREEN_HEIGHT / 2};
-    player.size = (Vector2) {30 , 30};
+    player.posicao_backup = (Vector2) {(float)SCREEN_WIDTH / 2 , (float)SCREEN_HEIGHT / 2};
+    player.size = (Vector2) {50 , 50};
     player.velocidade = 3.5f;
+    player.player_rec.x = (float)SCREEN_WIDTH / 2;
+    player.player_rec.y = (float)SCREEN_HEIGHT / 2;
+    player.player_rec.width = 50;
+    player.player_rec.height = 50;
 
     //Inicialização das celulas
     energia.size = (Vector2) {25, 40};
+    energia.alive = false;
+    energia.energia_rec.width = 25;
+    energia.energia_rec.height = 40;
 
     // Inicializacao dos projeteis
     for(int i = 0; i < MAX_PROJETEIS; i++)
@@ -131,7 +158,13 @@ int main(void)
 
             tij[i][j].size = (Vector2) {25, 40};
             tij[i][j].ativo = false;
+            tij[i][j].atingido_projetil = false;
             //printf("numero %d\n", contador_string_mapa);
+
+            tij[i][j].tij_rec.x = tij[i][j].posicao.x;
+            tij[i][j].tij_rec.y = tij[i][j].posicao.y;
+            tij[i][j].tij_rec.width = 25;
+            tij[i][j].tij_rec.height = 40;
 
             contador_colunas++;
             contador_string_mapa++;
@@ -143,15 +176,16 @@ int main(void)
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "BattleINF");
     SetTargetFPS(60);
 
+
     // Loop do jogo
     while(!WindowShouldClose())
     {
-        movimento_jogador(&player, tijolosRec);
-        movimento_projetil(&player, bullets);
+        movimento_jogador(&player, tij, &energia);
+        movimento_projetil(&player, bullets, tij);
         coloca_tijolo(tij);
-        draw(&player, bullets, tij, player.posicao, player.size);
+        draw(&player, bullets, tij, &energia);
         celulasEnergia(&energia, &player);
-    
+
     }
 
     CloseWindow();
@@ -161,76 +195,164 @@ int main(void)
 
 void celulasEnergia(CELULA *energia, JOGADOR *player){
 
-
-    Texture2D celulasText = LoadTexture("public/energy_drop_menor.png");
-
-    int randLin, randCol;
-    int i, j;
-
     srand(time(NULL));
 
-        //Precisa achar uma maneira de não trocar com tanta frequencia
-        for(i=0;i<2;i++){
-            int randLin = GetRandomValue(0, 1000);
-            int randCol = GetRandomValue(0, 600);      
-            //int randLin = rand()%1000;
-            //int randCol = rand()%600;
-        
-            DrawTexture(celulasText, randLin, randCol, RAYWHITE);
-        
-        }
-
-    if(&energia->posicao == &player->posicao){
-
-        //Como manter essa velocidade?
-        player->velocidade = 5.25f;
-        //projeteis aq
-
+    int celula_spawn = GetRandomValue(0, 5);
+    //Precisa achar uma maneira de não trocar com tanta frequencia
+    if(celula_spawn == 0 && energia->alive == false)
+    {
+            energia->posicao.x = GetRandomValue(0, 1000);
+            energia->posicao.y = GetRandomValue(0, 600);
+            energia->alive = true;
     }
-
-
 
 }
 
 // Calcula se o player esta indo para direita, esquerda, cima ou baixo
-void movimento_jogador(JOGADOR *player, Rectangle tijolosRec)
+void movimento_jogador(JOGADOR *player, TIJOLOS tij[][COLUNAS], CELULA *energia)
 {
+
+    Texture2D tanquePlayer = LoadTexture("public/tanque_player.png");
+    float rotation;
+
     if(IsKeyDown(KEY_RIGHT) && (player->posicao.x+player->size.x<SCREEN_WIDTH))
     {
-        player->posicao.x = player->posicao.x + player->velocidade;
+        player->posicao_backup.x = player->posicao.x;
+        player->posicao_backup.y = player->posicao.y;
+
+        if(verifica_colisao_celulas(player, energia)){
+            player->posicao.x += 5.25f;
+        }
+        else{
+            player->posicao.x = player->posicao.x + player->velocidade;
+        }
         player->right = true;
         player->left = false;
         player->up = false;
         player->down = false;
+
+        rotation = 90;
+
+        player->player_rec.x = player->posicao.x;
+        player->player_rec.y = player->posicao.y;
+
+        if(verifica_colisao_player(player, tij))
+        {
+            player->posicao.x = player->posicao_backup.x;
+            player->posicao.y = player->posicao_backup.y;
+
+            player->player_rec.x = player->posicao_backup.x;
+            player->player_rec.y = player->posicao_backup.y;
+        }
+
+
     }
     else if (IsKeyDown(KEY_LEFT) && (player->posicao.x >= 0))
     {
-        player->posicao.x = player->posicao.x - player->velocidade;
+        player->posicao_backup.x = player->posicao.x;
+        player->posicao_backup.y = player->posicao.y;
+
+        if(verifica_colisao_celulas(player, energia)){
+            player->posicao.x -= 5.25f;
+        }
+        else{
+            player->posicao.x = player->posicao.x - player->velocidade;
+        }
         player->right = false;
         player->left = true;
         player->up = false;
         player->down = false;
+
+        rotation = 270;
+
+        player->player_rec.x = player->posicao.x;
+        player->player_rec.y = player->posicao.y;
+
+        if(verifica_colisao_player(player, tij))
+        {
+            player->posicao.x = player->posicao_backup.x;
+            player->posicao.y = player->posicao_backup.y;
+
+            player->player_rec.x = player->posicao_backup.x;
+            player->player_rec.y = player->posicao_backup.y;
+        }
+
     }
-    else if (IsKeyDown(KEY_UP) && (player->posicao.y >= 60))
+    else if (IsKeyDown(KEY_UP) && (player->posicao.y >= 0))
     {
-        player->posicao.y = player->posicao.y - player->velocidade;
+        player->posicao_backup.x = player->posicao.x;
+        player->posicao_backup.y = player->posicao.y;
+
+        if(verifica_colisao_celulas(player, energia)){
+            player->posicao.y -= 5.25f;
+        }
+        else{
+            player->posicao.y = player->posicao.y - player->velocidade;
+        }
         player->right = false;
         player->left = false;
         player->up = true;
         player->down = false;
+
+        rotation = 0;
+
+        player->player_rec.x = player->posicao.x;
+        player->player_rec.y = player->posicao.y;
+
+        if(verifica_colisao_player(player, tij))
+        {
+            player->posicao.x = player->posicao_backup.x;
+            player->posicao.y = player->posicao_backup.y;
+
+            player->player_rec.x = player->posicao_backup.x;
+            player->player_rec.y = player->posicao_backup.y;
+        }
+
+
     }
     else if (IsKeyDown(KEY_DOWN) && (player->posicao.y+player->size.y<SCREEN_HEIGHT))
     {
-        player->posicao.y = player->posicao.y + player->velocidade;
+        player->posicao_backup.x = player->posicao.x;
+        player->posicao_backup.y = player->posicao.y;
+
+        if(verifica_colisao_celulas(player, energia)){
+            player->posicao.y += 5.25f;
+        }
+        else{
+            player->posicao.y = player->posicao.y + player->velocidade;
+        }
         player->right = false;
         player->left = false;
         player->up = false;
         player->down = true;
+
+        rotation = 180;
+
+        player->player_rec.x = player->posicao.x;
+        player->player_rec.y = player->posicao.y;
+
+
+        if(verifica_colisao_player(player, tij))
+        {
+            player->posicao.x = player->posicao_backup.x;
+            player->posicao.y = player->posicao_backup.y;
+
+            player->player_rec.x = player->posicao_backup.x;
+            player->player_rec.y = player->posicao_backup.y;
+        }
+
     }
+
+    DrawTexturePro(
+        tanquePlayer,
+        (Rectangle){0, 0, 510, 510},
+        player->player_rec,
+        (Vector2){25,25}, rotation, RAYWHITE);
+
 }
 
 // essa funcao desenha o jogo
-void draw(JOGADOR *player, PROJETIL bullets[], TIJOLOS tij[][COLUNAS], Vector2 posicao, Vector2 size)
+void draw(JOGADOR *player, PROJETIL bullets[], TIJOLOS tij[][COLUNAS], CELULA *energia)
 {
     // Comeca desenho
     BeginDrawing();
@@ -238,18 +360,18 @@ void draw(JOGADOR *player, PROJETIL bullets[], TIJOLOS tij[][COLUNAS], Vector2 p
 
         DrawRectangle(0, 0, 1000, 60, RED);
         DrawText("Fase 1", SCREEN_WIDTH/2 - 50, 0, 50, BLACK);
+
+        // carregar texturas
+        Texture2D tijolo_textura = LoadTexture("public/brick_texture2.png");
+        Texture2D celulasText = LoadTexture("public/energy_drop_menor.png");
         
 
-        Texture2D tijolo_textura = LoadTexture("public/brick_texture2.png");
 
         //valores para calcular colisões
         Rectangle tijolosRec = (Rectangle) {0,0,25,40};
-        Vector2 posicaoBackup = posicao;
-        Rectangle playerRec = {posicao.x, posicao.y, size.x, size.y};
-        Rectangle tijInter = GetCollisionRec(playerRec, tijolosRec);
 
         // Desenha player (ainda sem textura)
-        DrawRectangleV(player->posicao, player->size, MAROON);
+        //DrawRectangleV(player->posicao, player->size, MAROON);
 
         // Esse loop desenha os projeteis (ainda sem textura)
         for(int i = 0; i < MAX_PROJETEIS; i++)
@@ -267,18 +389,16 @@ void draw(JOGADOR *player, PROJETIL bullets[], TIJOLOS tij[][COLUNAS], Vector2 p
             {
                 if(tij[i][j].ativo)
                 {
-                    //printf("%c\n" , tij[i][j].elemento);
                     DrawTextureRec(tijolo_textura, tijolosRec , tij[i][j].posicao, RAYWHITE);
-
-                    
                 }
-                    //DrawRectangleV(tij[i][j].posicao, tij[i][j].size, BLACK);
             }
         }
 
-        //posicao = posicaoBackup;
-        //checa colisão do vetor com os tijolos
-        
+        if(energia->alive)
+        {
+            DrawTexture(celulasText, energia->posicao.x, energia->posicao.y, RAYWHITE);
+        }
+
 
     // Finaliza desenho
     EndDrawing();
@@ -286,7 +406,7 @@ void draw(JOGADOR *player, PROJETIL bullets[], TIJOLOS tij[][COLUNAS], Vector2 p
 
 
 // Atualiza o movimento dos projeteis
-void movimento_projetil(JOGADOR *player, PROJETIL bullets[])
+void movimento_projetil(JOGADOR *player, PROJETIL bullets[], TIJOLOS tij[][COLUNAS])
 {
     if(IsKeyPressed(KEY_SPACE))
     {
@@ -321,6 +441,7 @@ void movimento_projetil(JOGADOR *player, PROJETIL bullets[])
 
                     bullets[i].posicao.x = player->posicao.x;
                     bullets[i].posicao.y = player->posicao.y;
+
 
                     break;
                 }
@@ -362,23 +483,48 @@ void movimento_projetil(JOGADOR *player, PROJETIL bullets[])
         if(bullets[i].ativo && bullets[i].right)
         {
             bullets[i].posicao.x = bullets[i].posicao.x + 20;
+
+            bullets[i].bullet_rec.x = bullets[i].posicao.x;
+            bullets[i].bullet_rec.y = bullets[i].posicao.y;
+
+            bullets[i].bullet_rec.width = bullets[i].size.x;
+            bullets[i].bullet_rec.height = bullets[i].size.y;
+
         }
         if(bullets[i].ativo && bullets[i].left)
         {
             bullets[i].posicao.x = bullets[i].posicao.x - 20;
+
+            bullets[i].bullet_rec.x = bullets[i].posicao.x;
+            bullets[i].bullet_rec.y = bullets[i].posicao.y;
+
+            bullets[i].bullet_rec.width = bullets[i].size.x;
+            bullets[i].bullet_rec.height = bullets[i].size.y;
         }
         if(bullets[i].ativo && bullets[i].up)
         {
             bullets[i].posicao.y = bullets[i].posicao.y - 20;
+
+            bullets[i].bullet_rec.x = bullets[i].posicao.x;
+            bullets[i].bullet_rec.y = bullets[i].posicao.y;
+
+            bullets[i].bullet_rec.width = bullets[i].size.x;
+            bullets[i].bullet_rec.height = bullets[i].size.y;
         }
         if(bullets[i].ativo && bullets[i].down)
         {
             bullets[i].posicao.y = bullets[i].posicao.y + 20;
+
+            bullets[i].bullet_rec.x = bullets[i].posicao.x;
+            bullets[i].bullet_rec.y = bullets[i].posicao.y;
+
+            bullets[i].bullet_rec.width = bullets[i].size.x;
+            bullets[i].bullet_rec.height = bullets[i].size.y;
         }
 
         if(bullets[i].ativo)
         {
-            if (bullets[i].posicao.x < 0 || bullets[i].posicao.x > SCREEN_WIDTH || bullets[i].posicao.y < 0 || bullets[i].posicao.y > SCREEN_HEIGHT)
+            if(bullets[i].posicao.x < 0 || bullets[i].posicao.x > SCREEN_WIDTH || bullets[i].posicao.y < 0 || bullets[i].posicao.y > SCREEN_HEIGHT)
             {
                 bullets[i].posicao = (Vector2) {(float)SCREEN_WIDTH / 2 , (float)SCREEN_HEIGHT / 2};
                 bullets[i].size = (Vector2) {15, 15};
@@ -391,6 +537,8 @@ void movimento_projetil(JOGADOR *player, PROJETIL bullets[])
             }
         }
     }
+
+    verifica_colisao_projetil(bullets, tij);
 }
 
 // Verifica se o elemento do arquivo mapa eh um tijolo a ser colocado
@@ -400,12 +548,80 @@ void coloca_tijolo(TIJOLOS tij[][COLUNAS])
     {
         for(int j = 0; j < COLUNAS; j++)
         {
-             if(tij[i][j].elemento == '#')
+             if(tij[i][j].elemento == '#' && !tij[i][j].atingido_projetil)
              {
                  tij[i][j].ativo = true;
              }
         }
 
+    }
+}
+
+bool verifica_colisao_celulas(JOGADOR *player, CELULA *energia)
+{
+    bool colisao = false;
+
+    for(int i = 0; i <  LINHAS; i++){
+
+            for(int j = 0; j < COLUNAS; j++){
+
+                if(CheckCollisionRecs(player->player_rec, energia->energia_rec)){
+                    colisao = true;
+                }
+
+            }
+
+        }    
+   
+    return colisao;
+}
+
+bool verifica_colisao_player(JOGADOR *player, TIJOLOS tij[][COLUNAS])
+{
+    bool colisao = false;
+
+    for(int i = 0; i <  LINHAS; i++)
+    {
+        for(int j = 0; j < COLUNAS; j++)
+        {
+
+            if(CheckCollisionRecs(player->player_rec, tij[i][j].tij_rec) && tij[i][j].ativo)
+            {
+                colisao = true;
+            }
+        }
+    }
+
+    return colisao;
+}
+
+bool verifica_colisao_projetil(PROJETIL bullets[], TIJOLOS tij[][COLUNAS])
+{
+    bool colisao = false;
+
+    for(int i = 0; i < LINHAS; i++)
+    {
+        for(int j = 0; j < COLUNAS; j++)
+        {
+            for(int k = 0; k < MAX_PROJETEIS; k++)
+            {
+                if((CheckCollisionRecs(bullets[k].bullet_rec, tij[i][j].tij_rec) && tij[i][j].ativo))
+                {
+                    tij[i][j].ativo = false;
+                    tij[i][j].atingido_projetil = true;
+
+                    bullets[k].posicao = (Vector2) {(float)SCREEN_WIDTH / 2 , (float)SCREEN_HEIGHT / 2};
+                    bullets[k].size = (Vector2) {15, 15};
+                    bullets[k].ativo = false;
+
+                    bullets[k].right = false;
+                    bullets[k].left = false;
+                    bullets[k].up = false;
+                    bullets[k].down = false;
+
+                }
+            }
+        }
     }
 }
 
