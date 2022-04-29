@@ -346,7 +346,7 @@ void movimento_jogador(JOGADOR *player, TIJOLOS tij[][COLUNAS], CELULA *energia)
             player->player_rec.y = player->posicao_backup.y;
         }
     }
-
+    ///desenha textura do tanque
     DrawTexturePro(
         tanquePlayer,
         (Rectangle){0, 0, 510, 510},
