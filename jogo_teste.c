@@ -342,7 +342,7 @@ void movimento_jogador(JOGADOR *player, TIJOLOS tij[][COLUNAS], CELULA *energia)
         }
 
     }
-
+    ///desenha textura do tanque
     DrawTexturePro(
         tanquePlayer,
         (Rectangle){0, 0, 510, 510},
