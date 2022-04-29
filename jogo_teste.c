@@ -74,7 +74,6 @@ typedef struct
 void coloca_tijolo(TIJOLOS[][COLUNAS]);
 
 // essa funcao calcula e atualiza o movimento do jogador
-
 void movimento_jogador(JOGADOR*, TIJOLOS[][COLUNAS], CELULA*);
 
 // Essa funcao desenha o jogo
@@ -88,7 +87,6 @@ void celulasEnergia(CELULA*, JOGADOR*);
 
 // Essa funçao verifica colisao entre o player e tijolos
 bool verifica_colisao_player(JOGADOR*, TIJOLOS[][COLUNAS]);
-
 
 //Essa funcao verifica colisao entre os tijolos e os projeteis
 bool verifica_colisao_projetil(PROJETIL[], TIJOLOS[][COLUNAS]);
@@ -106,11 +104,11 @@ int main(void)
     JOGADOR player;
     PROJETIL bullets[MAX_PROJETEIS];
     CELULA energia;
+    int i;
 
     // Inicializacao do jogador
     player.posicao = (Vector2) {(float)SCREEN_WIDTH / 2 , (float)SCREEN_HEIGHT / 2};
     player.posicao_backup = (Vector2) {(float)SCREEN_WIDTH / 2 , (float)SCREEN_HEIGHT / 2};
-
     player.size = (Vector2) {50 , 50};
     player.velocidade = 3.5f;
     player.player_rec.x = (float)SCREEN_WIDTH / 2;
@@ -123,6 +121,9 @@ int main(void)
     energia.alive = false;
     energia.energia_rec.width = 25;
     energia.energia_rec.height = 40;
+
+    bullets[i].bullet_rec.width = 15;
+    bullets[i].bullet_rec.height =15;
 
     // Inicializacao dos projeteis
     for(int i = 0; i < MAX_PROJETEIS; i++)
@@ -183,7 +184,6 @@ int main(void)
     // Loop do jogo
     while(!WindowShouldClose())
     {
-
         movimento_jogador(&player, tij, &energia);
         movimento_projetil(&player, bullets, tij);
         coloca_tijolo(tij);
@@ -214,7 +214,6 @@ void celulasEnergia(CELULA *energia, JOGADOR *player){
 
 // Calcula se o player esta indo para direita, esquerda, cima ou baixo
 void movimento_jogador(JOGADOR *player, TIJOLOS tij[][COLUNAS], CELULA *energia)
-
 {
 
     Texture2D tanquePlayer = LoadTexture("public/tanque_player.png");
@@ -231,12 +230,11 @@ void movimento_jogador(JOGADOR *player, TIJOLOS tij[][COLUNAS], CELULA *energia)
         else{
             player->posicao.x = player->posicao.x + player->velocidade;
         }
-
         player->right = true;
         player->left = false;
         player->up = false;
         player->down = false;
-      
+
         rotation = 90;
 
         player->player_rec.x = player->posicao.x;
@@ -251,12 +249,12 @@ void movimento_jogador(JOGADOR *player, TIJOLOS tij[][COLUNAS], CELULA *energia)
             player->player_rec.y = player->posicao_backup.y;
         }
 
+
     }
     else if (IsKeyDown(KEY_LEFT) && (player->posicao.x >= 0))
     {
         player->posicao_backup.x = player->posicao.x;
         player->posicao_backup.y = player->posicao.y;
-
 
         if(verifica_colisao_celulas(player, energia)){
             player->posicao.x -= 5.25f;
@@ -264,7 +262,6 @@ void movimento_jogador(JOGADOR *player, TIJOLOS tij[][COLUNAS], CELULA *energia)
         else{
             player->posicao.x = player->posicao.x - player->velocidade;
         }
-
         player->right = false;
         player->left = true;
         player->up = false;
@@ -283,6 +280,7 @@ void movimento_jogador(JOGADOR *player, TIJOLOS tij[][COLUNAS], CELULA *energia)
             player->player_rec.x = player->posicao_backup.x;
             player->player_rec.y = player->posicao_backup.y;
         }
+
     }
     else if (IsKeyDown(KEY_UP) && (player->posicao.y >= 0))
     {
@@ -295,12 +293,11 @@ void movimento_jogador(JOGADOR *player, TIJOLOS tij[][COLUNAS], CELULA *energia)
         else{
             player->posicao.y = player->posicao.y - player->velocidade;
         }
-
         player->right = false;
         player->left = false;
         player->up = true;
         player->down = false;
-      
+
         rotation = 0;
 
         player->player_rec.x = player->posicao.x;
@@ -314,6 +311,7 @@ void movimento_jogador(JOGADOR *player, TIJOLOS tij[][COLUNAS], CELULA *energia)
             player->player_rec.x = player->posicao_backup.x;
             player->player_rec.y = player->posicao_backup.y;
         }
+
 
     }
     else if (IsKeyDown(KEY_DOWN) && (player->posicao.y+player->size.y<SCREEN_HEIGHT))
@@ -337,6 +335,7 @@ void movimento_jogador(JOGADOR *player, TIJOLOS tij[][COLUNAS], CELULA *energia)
         player->player_rec.x = player->posicao.x;
         player->player_rec.y = player->posicao.y;
 
+
         if(verifica_colisao_player(player, tij))
         {
             player->posicao.x = player->posicao_backup.x;
@@ -345,8 +344,9 @@ void movimento_jogador(JOGADOR *player, TIJOLOS tij[][COLUNAS], CELULA *energia)
             player->player_rec.x = player->posicao_backup.x;
             player->player_rec.y = player->posicao_backup.y;
         }
+
     }
-    ///desenha textura do tanque
+
     DrawTexturePro(
         tanquePlayer,
         (Rectangle){0, 0, 510, 510},
@@ -368,19 +368,32 @@ void draw(JOGADOR *player, PROJETIL bullets[], TIJOLOS tij[][COLUNAS], CELULA *e
         // carregar texturas
         Texture2D tijolo_textura = LoadTexture("public/brick_texture2.png");
         Texture2D celulasText = LoadTexture("public/energy_drop_menor.png");
+        Texture2D projetilText = LoadTexture("public/PNG/Effects/Sprites/Sprite_Fire_Shots_Flame_007.png");
 
         //valores para calcular colisões
-        Rectangle tijolosRec = (Rectangle) {0,0,25,40};
+        Rectangle tijolosRec = (Rectangle) {0,0,25,45};
 
         // Desenha player (ainda sem textura)
         //DrawRectangleV(player->posicao, player->size, MAROON);
 
-        // Esse loop desenha os projeteis (ainda sem textura)
+        // Esse loop desenha os projeteis e rotaciona os mesmos de acordo com a posição
         for(int i = 0; i < MAX_PROJETEIS; i++)
         {
-            if(bullets[i].ativo)
-            {
-                DrawRectangleV(bullets[i].posicao, bullets[i].size, GREEN);
+            if(IsKeyDown(KEY_RIGHT) && bullets[i].ativo){
+                //DrawRectangleV(bullets[i].posicao, bullets[i].size, GREEN);
+                DrawTexturePro(projetilText,(Rectangle){0, 0, 256, 256}, bullets[i].bullet_rec, bullets[i].size, 90, RAYWHITE);
+            }
+            if(IsKeyDown(KEY_LEFT) && bullets[i].ativo){
+                DrawTexturePro(projetilText,(Rectangle){0, 0, 256, 256}, bullets[i].bullet_rec, bullets[i].size, 90, RAYWHITE);
+            }
+            if(IsKeyDown(KEY_UP) && bullets[i].ativo){
+                DrawTexturePro(projetilText,(Rectangle){0, 0, 256, 256}, bullets[i].bullet_rec, bullets[i].size, 0, RAYWHITE);
+            }
+            if(IsKeyDown(KEY_DOWN) && bullets[i].ativo){
+                DrawTexturePro(projetilText,(Rectangle){0, 0, 256, 256}, bullets[i].bullet_rec, bullets[i].size, 0, RAYWHITE);
+            }
+            else if((!IsKeyDown(KEY_DOWN)) && (!IsKeyDown(KEY_LEFT)) && (!IsKeyDown(KEY_RIGHT)) && bullets[i].ativo){
+                DrawTexturePro(projetilText,(Rectangle){0, 0, 256, 256}, bullets[i].bullet_rec, bullets[i].size, 0, RAYWHITE);
             }
         }
 
@@ -391,7 +404,8 @@ void draw(JOGADOR *player, PROJETIL bullets[], TIJOLOS tij[][COLUNAS], CELULA *e
             {
                 if(tij[i][j].ativo)
                 {
-                    DrawTextureRec(tijolo_textura, tijolosRec , tij[i][j].posicao, RAYWHITE);
+                    //DrawTextureRec(tijolo_textura, tijolosRec , tij[i][j].posicao, RAYWHITE);
+                    DrawTexturePro(tijolo_textura, (Rectangle){0, 0, 124, 124}, tij[i][j].tij_rec, tij[i][j].size, 0, RAYWHITE);
                 }
             }
         }
@@ -558,7 +572,6 @@ void coloca_tijolo(TIJOLOS tij[][COLUNAS])
 
     }
 }
-
 
 bool verifica_colisao_celulas(JOGADOR *player, CELULA *energia)
 {
