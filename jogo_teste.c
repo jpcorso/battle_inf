@@ -8,6 +8,7 @@
 #define SCREEN_WIDTH 1000
 #define SCREEN_HEIGHT 660
 #define MAX_PROJETEIS 1
+#define MAX_INIMIGOS 1
 #define LINHAS 15
 #define COLUNAS 40 + 1 //Esse +1 pq quando chega no final tem um comando ou algo parecido pra indicar nova linha, por isso antes ficava uma escada
 
@@ -30,6 +31,25 @@ typedef struct
     int rotation;
 
 }JOGADOR;
+
+typedef struct
+{
+    Vector2 posicao;
+    Vector2 posicao_backup;
+    Vector2 size;
+    Rectangle enemy_rec;
+
+    bool left;
+    bool right;
+    bool up;
+    bool down;
+
+    bool ativo;
+
+    int velocidade;
+    int rotation;
+
+}INIMIGOS;
 
 // Struct para armazenar informacoes de projeteis
 typedef struct
@@ -82,15 +102,30 @@ void coloca_tijolo(TIJOLOS[][COLUNAS]);
 void movimento_jogador(JOGADOR*, TIJOLOS[][COLUNAS]);
 
 // Essa funcao desenha o jogo
-void draw(JOGADOR*, PROJETIL[], TIJOLOS[][COLUNAS], CELULA*);
-
+void draw(JOGADOR*, PROJETIL[], TIJOLOS[][COLUNAS], CELULA*, INIMIGOS[], Texture2D, Texture2D, Texture2D, Texture2D, Texture2D);
+// TODO (nao consegui fazer)
 void desenha_menu(int TELA);
 
 // Essa funcao calcula e atualiza o movimento dos projeteis
 void movimento_projetil(JOGADOR*, PROJETIL[], TIJOLOS[][COLUNAS]);
 
 //Essa função coloca as células de energia
-void celulasEnergia(CELULA*, JOGADOR*, PROJETIL[]);
+void celulasEnergia(CELULA*, JOGADOR*, PROJETIL[], int*, int*);
+
+//essa funcao eh tipo uma interface que vai coordenar todas as funcoes relativas aos inimigos
+void inimigos(INIMIGOS[], int*, int*, int*, TIJOLOS[][COLUNAS]);
+
+//verifica a nova direcao do inimigo
+void direcao_inimigo(INIMIGOS[], int);
+
+//atualiza a posicao do inimigo
+void movimento_inimigo(INIMIGOS[], int, TIJOLOS[][COLUNAS]);
+
+// verifica o tempo de spawn dos inimigos
+bool spawn_inimigos(int*, int*);
+
+// Essa funcao verifica colisao entre inimigos e tijolos
+bool verifica_colisao_inimigo(INIMIGOS[], TIJOLOS[][COLUNAS]);
 
 // Essa funçao verifica colisao entre o player e tijolos
 bool verifica_colisao_player(JOGADOR*, TIJOLOS[][COLUNAS]);
@@ -98,6 +133,7 @@ bool verifica_colisao_player(JOGADOR*, TIJOLOS[][COLUNAS]);
 // Essa funcao verifica colisao entra projetil e tijolos
 bool verifica_colisao_projetil(PROJETIL[], TIJOLOS[][COLUNAS]);
 
+// essa funcao eh o contador do bonus da celula de energia (15 seg)
 bool timer(int* , int*);
 
 
@@ -107,6 +143,8 @@ int main(void)
     int marcador_tela = 0;
     int menu[5] = {1 , 2 , 3 , 4 , 5};
     int GAMEPLAY = 5;
+
+
     // Inicializar o array que vai armazenar a string do mapa do jogo
     char tijolosText[600 + 15]; // Esses +15 por causa daquele comando de nova linha
 
@@ -116,12 +154,13 @@ int main(void)
     JOGADOR player;
     PROJETIL bullets[MAX_PROJETEIS];
     CELULA energia;
+    INIMIGOS enemy[MAX_INIMIGOS];
 
     // Inicializacao do jogador
     player.posicao = (Vector2) {(float)SCREEN_WIDTH / 2 , (float)SCREEN_HEIGHT / 2};
     player.posicao_backup = (Vector2) {(float)SCREEN_WIDTH / 2 , (float)SCREEN_HEIGHT / 2};
     player.size = (Vector2) {30 , 30};
-    player.velocidade = 4;
+    player.velocidade = 3;
     player.boost_velocidade = 0;
     player.player_rec.x = (float)SCREEN_WIDTH / 2;
     player.player_rec.y = (float)SCREEN_HEIGHT / 2;
@@ -132,6 +171,27 @@ int main(void)
     player.left = false;
     player.up = false;
     player.down = false;
+
+    // Inicializacao dos inimigos
+    for(int i = 0; i < MAX_INIMIGOS; i++)
+    {
+        enemy[i].posicao = (Vector2) {(float)SCREEN_WIDTH / 2 , (float)SCREEN_HEIGHT / 2};
+        enemy[i].posicao_backup = (Vector2) {(float)SCREEN_WIDTH / 2 , (float)SCREEN_HEIGHT / 2};
+        enemy[i].size = (Vector2) {30 , 30};
+        enemy[i].velocidade = 3;
+        enemy[i].enemy_rec.x = (float)SCREEN_WIDTH / 2;
+        enemy[i].enemy_rec.y = (float)SCREEN_HEIGHT / 2;
+        enemy[i].enemy_rec.width = 30;
+        enemy[i].enemy_rec.height = 30;
+
+        enemy[i].right = true;
+        enemy[i].left = false;
+        enemy[i].up = false;
+        enemy[i].down = false;
+
+        enemy[i].ativo = false;
+
+    }
 
     //Inicialização das celulas
     energia.size = (Vector2) {25, 40};
@@ -155,9 +215,11 @@ int main(void)
 
     // Inicializacao dos blocos do mapa
     strcpy(tijolosText, LoadFileText("mapas/mapa1"));
+
     int contador_string_mapa = 0;
     int contador_linhas = 0;
     int contador_colunas = 0;
+    int numero_inimigos = 0;
 
     for(int i = 0; i < LINHAS; i++)
     {
@@ -191,9 +253,34 @@ int main(void)
         contador_linhas++;
     }
 
+
     // Faz a janela
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "BattleINF");
     SetTargetFPS(60);
+
+    // carregar texturas
+        Texture2D tijolo_textura = LoadTexture("public/brick_texture2.png");
+        Texture2D celulasText = LoadTexture("public/energy_drop_menor.png");
+        Texture2D tanquePlayer = LoadTexture("public/tanque_player.png");
+        Texture2D projetilText = LoadTexture("public/PNG/Effects/Sprites/Sprite_Fire_Shots_Flame_007.png");
+
+        // TODO (eu tava colocando textura nos tanques inimigos mas nao consegui)
+        Texture2D tanqueEnemy = LoadTexture("public/tanque_inimigo.png");
+        /*
+        Texture2D tanqueEnemy1 = LoadTexture("public/tanque_inimigo1.png");
+        Texture2D tanqueEnemy2 = LoadTexture("public/tanque_inimigo2.png");
+        Texture2D tanqueEnemy3 = LoadTexture("public/tanque_inimigo3.png");
+        Texture2D tanqueEnemy4 = LoadTexture("public/tanque_inimigo4.png");
+        */
+
+    int frame = 0;
+    int segundos_frame = 0;
+
+    int frame_enemy = 0;
+    int segundos_frame_enemy = 0;
+
+    coloca_tijolo(tij);
+
 
 
     // Loop do jogo
@@ -201,9 +288,13 @@ int main(void)
     {
         movimento_jogador(&player, tij);
         movimento_projetil(&player, bullets, tij);
-        coloca_tijolo(tij);
-        draw(&player, bullets, tij, &energia);
-        celulasEnergia(&energia, &player, bullets);
+        //coloca_tijolo(tij);
+        inimigos(enemy, &frame_enemy, &segundos_frame_enemy, &numero_inimigos, tij);
+
+        draw(&player, bullets, tij, &energia, enemy,tijolo_textura, celulasText, tanquePlayer, projetilText,
+             tanqueEnemy);
+
+        celulasEnergia(&energia, &player, bullets, &frame, &segundos_frame);
     }
 
     CloseWindow();
@@ -211,16 +302,17 @@ int main(void)
 
 }
 
-void celulasEnergia(CELULA *energia, JOGADOR *player, PROJETIL bullets[]){
+void celulasEnergia(CELULA *energia, JOGADOR *player, PROJETIL bullets[], int *frames, int *segundos_frames){
 
     srand(time(NULL));
+
 
     int celula_spawn = GetRandomValue(0, 5);
     //Precisa achar uma maneira de não trocar com tanta frequencia
     if(celula_spawn == 0 && energia->alive == false)
     {
             energia->posicao.x = GetRandomValue(0, 1000);
-            energia->posicao.y = GetRandomValue(0, 600);
+            energia->posicao.y = GetRandomValue(60, 600);
 
             energia->energia_rec.x = energia->posicao.x;
             energia->energia_rec.y = energia->posicao.y;
@@ -240,7 +332,7 @@ void celulasEnergia(CELULA *energia, JOGADOR *player, PROJETIL bullets[]){
 
     }
 
-    if(energia->boost_ativo)
+    if(energia->boost_ativo && timer(frames, segundos_frames))
     {
         player->boost_velocidade = 2;
         for(int i = 0; i < MAX_PROJETEIS; i++)
@@ -367,7 +459,9 @@ void movimento_jogador(JOGADOR *player, TIJOLOS tij[][COLUNAS])
 }
 
 // essa funcao desenha o jogo
-void draw(JOGADOR *player, PROJETIL bullets[], TIJOLOS tij[][COLUNAS], CELULA *energia)
+void draw(JOGADOR *player, PROJETIL bullets[], TIJOLOS tij[][COLUNAS], CELULA *energia, INIMIGOS enemy[],
+          Texture2D tijolo_textura, Texture2D celulasText, Texture2D tanquePlayer, Texture2D projetilText,
+          Texture2D tanqueEnemy)
 {
     // Comeca desenho
     BeginDrawing();
@@ -377,16 +471,16 @@ void draw(JOGADOR *player, PROJETIL bullets[], TIJOLOS tij[][COLUNAS], CELULA *e
         DrawText("Fase 1", ((SCREEN_WIDTH - MeasureText("Fase 1", 50)) / 2), 10, 50, BLACK);
 
         // carregar texturas
-        Texture2D tijolo_textura = LoadTexture("public/brick_texture2.png");
-        Texture2D celulasText = LoadTexture("public/energy_drop_menor.png");
-        Texture2D tanquePlayer = LoadTexture("public/tanque_player.png");
-        Texture2D projetilText = LoadTexture("public/PNG/Effects/Sprites/Sprite_Fire_Shots_Flame_007.png");
+        //Texture2D tijolo_textura = LoadTexture("public/brick_texture2.png");
+        //Texture2D celulasText = LoadTexture("public/energy_drop_menor.png");
+        //Texture2D tanquePlayer = LoadTexture("public/tanque_player.png");
+        //Texture2D projetilText = LoadTexture("public/PNG/Effects/Sprites/Sprite_Fire_Shots_Flame_007.png");
 
 
         //valores para calcular colisões
         Rectangle tijolosRec = (Rectangle) {0,0,25,40};
 
-        // Desenha player (ainda sem textura)
+        // Desenha player
         //DrawRectangleV(player->posicao, player->size, MAROON);
         if(player->right)
         {
@@ -405,7 +499,7 @@ void draw(JOGADOR *player, PROJETIL bullets[], TIJOLOS tij[][COLUNAS], CELULA *e
             DrawTexturePro(tanquePlayer, (Rectangle){0, 0, 510, 510}, player->player_rec,(Vector2){30 , 30}, player->rotation, RAYWHITE);
         }
 
-        // Esse loop desenha os projeteis (ainda sem textura)
+        // Esse loop desenha os projeteis
         for(int i = 0; i < MAX_PROJETEIS; i++)
         {
             if(bullets[i].ativo)
@@ -442,10 +536,35 @@ void draw(JOGADOR *player, PROJETIL bullets[], TIJOLOS tij[][COLUNAS], CELULA *e
                 }
             }
         }
-
+        // Desenha celulas
         if(energia->alive)
         {
             DrawTexture(celulasText, energia->posicao.x, energia->posicao.y, RAYWHITE);
+        }
+
+        // Inimigos
+        for(int i = 0; i < MAX_INIMIGOS; i++)
+        {
+            if(enemy[i].ativo && enemy[i].right)
+            {
+                DrawRectangleV(enemy[i].posicao, enemy[i].size, MAROON);
+                DrawTexturePro(tanqueEnemy,(Rectangle){0, 0, 510, 510}, enemy[0].enemy_rec, (Vector2) {0 , 30}, enemy[i].rotation, RAYWHITE);
+            }
+            if(enemy[i].ativo && enemy[i].left)
+            {
+                DrawRectangleV(enemy[i].posicao, enemy[i].size, MAROON);
+                DrawTexturePro(tanqueEnemy,(Rectangle){0, 0, 510, 510}, enemy[0].enemy_rec, (Vector2) {30 , 0}, enemy[i].rotation, RAYWHITE);
+            }
+            if(enemy[i].ativo && enemy[i].up)
+            {
+                DrawRectangleV(enemy[i].posicao, enemy[i].size, MAROON);
+                DrawTexturePro(tanqueEnemy,(Rectangle){0, 0, 510, 510}, enemy[0].enemy_rec, (Vector2) {0 , 0}, enemy[i].rotation, RAYWHITE);
+            }
+            if(enemy[i].ativo && enemy[i].down)
+            {
+                DrawRectangleV(enemy[i].posicao, enemy[i].size, MAROON);
+                DrawTexturePro(tanqueEnemy,(Rectangle){0, 0, 510, 510}, enemy[0].enemy_rec, (Vector2) {30 , 30}, enemy[i].rotation, RAYWHITE);
+            }
         }
 
 
@@ -459,67 +578,66 @@ void movimento_projetil(JOGADOR *player, PROJETIL bullets[], TIJOLOS tij[][COLUN
 {
     if(IsKeyPressed(KEY_SPACE))
     {
-        for (int i = 0; i < MAX_PROJETEIS; i++)
+        for (int k = 0; k < MAX_PROJETEIS; k++)
         {
-            if(!bullets[i].ativo)
+            if(!bullets[k].ativo)
             {
 
-                if(player[i].right == true)
+                if(player[k].right == true)
                 {
-                    bullets[i].ativo = true;
+                    bullets[k].ativo = true;
 
-                    bullets[i].right = true;
-                    bullets[i].left = false;
-                    bullets[i].up = false;
-                    bullets[i].down = false;
+                    bullets[k].right = true;
+                    bullets[k].left = false;
+                    bullets[k].up = false;
+                    bullets[k].down = false;
 
-                    bullets[i].posicao.x = player->posicao.x;
-                    bullets[i].posicao.y = player->posicao.y;
+                    bullets[k].posicao.x = player->posicao.x;
+                    bullets[k].posicao.y = player->posicao.y;
+                    break;
 
+
+                }
+                else if (player[k].left == true)
+                {
+                    bullets[k].ativo = true;
+
+                    bullets[k].right = false;
+                    bullets[k].left = true;
+                    bullets[k].up = false;
+                    bullets[k].down = false;
+
+                    bullets[k].posicao.x = player->posicao.x;
+                    bullets[k].posicao.y = player->posicao.y;
+                    break;
+
+
+                }
+                else if (player[k].up == true)
+                {
+                    bullets[k].ativo = true;
+
+                    bullets[k].right = false;
+                    bullets[k].left = false;
+                    bullets[k].up = true;
+                    bullets[k].down = false;
+
+                    bullets[k].posicao.x = player->posicao.x;
+                    bullets[k].posicao.y = player->posicao.y;
                     break;
 
                 }
-                if (player[i].left == true)
+                else if (player[k].down == true)
                 {
-                    bullets[i].ativo = true;
+                    bullets[k].ativo = true;
 
-                    bullets[i].right = false;
-                    bullets[i].left = true;
-                    bullets[i].up = false;
-                    bullets[i].down = false;
+                    bullets[k].right = false;
+                    bullets[k].left = false;
+                    bullets[k].up = false;
+                    bullets[k].down = true;
 
-                    bullets[i].posicao.x = player->posicao.x;
-                    bullets[i].posicao.y = player->posicao.y;
-
-
-                    break;
-                }
-                if (player[i].up == true)
-                {
-                    bullets[i].ativo = true;
-
-                    bullets[i].right = false;
-                    bullets[i].left = false;
-                    bullets[i].up = true;
-                    bullets[i].down = false;
-
-                    bullets[i].posicao.x = player->posicao.x;
-                    bullets[i].posicao.y = player->posicao.y;
-
-                    break;
-                }
-                if (player[i].down == true)
-                {
-                    bullets[i].ativo = true;
-
-                    bullets[i].right = false;
-                    bullets[i].left = false;
-                    bullets[i].up = false;
-                    bullets[i].down = true;
-
-                    bullets[i].posicao.x = player->posicao.x;
-                    bullets[i].posicao.y = player->posicao.y;
-
+                    bullets[k].posicao.x = player->posicao.x;
+                    bullets[k].posicao.y = player->posicao.y;
                     break;
                 }
             }
@@ -655,23 +773,222 @@ bool verifica_colisao_projetil(PROJETIL bullets[], TIJOLOS tij[][COLUNAS])
     }
 }
 
-bool timer(int *tempo, int *frames)
+bool timer(int *frames, int *segundos_frames)
 {
-    bool time = true;
-    *frames++;
-    if (*frames >= 60)
+    bool tempo = true;
+
+    *frames = *frames + 1;
+
+    if(*frames >= 60)
     {
         *frames = 0;
-        *tempo++;
+        *segundos_frames = *segundos_frames + 1;
     }
-    if (*tempo >= 15)
+    if (*segundos_frames >= 15)
     {
-        *tempo = 0;
-        bool time = false;
+        *frames = 0;
+        *segundos_frames = 0;
+        tempo = false;
     }
 
-    return time;
+    return tempo;
 }
+
+void inimigos (INIMIGOS enemy[], int *frame_enemy, int *segundos_frame_enemy, int *numero_inimigos, TIJOLOS tij[][COLUNAS])
+{
+    srand(time(NULL));
+    int index_inimigo = *numero_inimigos;
+
+    if(spawn_inimigos(frame_enemy, segundos_frame_enemy) && *numero_inimigos < MAX_INIMIGOS)
+    {
+        enemy[index_inimigo].posicao = (Vector2) {260, 250};
+        enemy[index_inimigo].posicao_backup = (Vector2) {120 , 120};
+        enemy[index_inimigo].size = (Vector2) {30 , 30};
+        enemy[index_inimigo].velocidade = 3;
+        enemy[index_inimigo].enemy_rec.x = (float)SCREEN_WIDTH / 2;
+        enemy[index_inimigo].enemy_rec.y = (float)SCREEN_HEIGHT / 2;
+        enemy[index_inimigo].enemy_rec.width = 30;
+        enemy[index_inimigo].enemy_rec.height = 30;
+
+        enemy[index_inimigo].right = false;
+        enemy[index_inimigo].left = false;
+        enemy[index_inimigo].up = false;
+        enemy[index_inimigo].down = false;
+
+        enemy[index_inimigo].ativo = true;
+        *numero_inimigos = *numero_inimigos + 1;
+
+    }
+    for(int i = 0; i < MAX_INIMIGOS; i++)
+    {
+        movimento_inimigo(enemy, i, tij);
+
+        int muda_direcao = GetRandomValue(0, 0);
+
+        if(muda_direcao == 0 && enemy[i].ativo)
+        {
+            direcao_inimigo(enemy, i);
+        }
+    }
+}
+
+void direcao_inimigo(INIMIGOS enemy[], int i)
+{
+    srand(time(NULL));
+    int direcao = GetRandomValue(0, 3);
+
+    if(direcao == 0)
+    {
+       enemy[i].right = true;
+       enemy[i].left = false;
+       enemy[i].up = false;
+       enemy[i].down = false;
+    }
+    if(direcao == 1)
+    {
+        enemy[i].right = false;
+        enemy[i].left = true;
+        enemy[i].up = false;
+        enemy[i].down = false;
+
+    }
+    if(direcao == 2)
+    {
+        enemy[i].right = false;
+        enemy[i].left = false;
+        enemy[i].up = true;
+        enemy[i].down = false;
+
+    }
+    if(direcao == 3)
+    {
+        enemy[i].right = false;
+        enemy[i].left = false;
+        enemy[i].up = false;
+        enemy[i].down = true;
+
+    }
+}
+
+void movimento_inimigo(INIMIGOS enemy[], int i, TIJOLOS tij[][COLUNAS])
+{
+    if(enemy[i].right && (enemy[i].posicao.x + enemy[i].size.x) < SCREEN_WIDTH)
+    {
+       enemy[i].posicao_backup.x = enemy[i].posicao.x;
+       enemy[i].posicao_backup.y = enemy[i].posicao.y;
+
+       enemy[i].posicao.x = enemy[i].posicao.x + 3;
+
+       enemy[i].enemy_rec.x = enemy[i].posicao.x;
+       enemy[i].enemy_rec.y = enemy[i].posicao.y;
+
+       enemy[i].rotation = 90;
+
+       if(verifica_colisao_inimigo(enemy, tij))
+       {
+           enemy[i].posicao.x = enemy[i].posicao_backup.x;
+           enemy[i].posicao.y = enemy[i].posicao_backup.y;
+       }
+    }
+    else if(enemy[i].left && enemy[i].posicao.x > 0)
+    {
+        enemy[i].posicao_backup.x = enemy[i].posicao.x;
+        enemy[i].posicao_backup.y = enemy[i].posicao.y;
+
+        enemy[i].posicao.x = enemy[i].posicao.x - 3;
+
+        enemy[i].enemy_rec.x = enemy[i].posicao.x;
+        enemy[i].enemy_rec.y = enemy[i].posicao.y;
+
+        enemy[i].rotation = 270;
+
+        if(verifica_colisao_inimigo(enemy, tij))
+       {
+           enemy[i].posicao.x = enemy[i].posicao_backup.x;
+           enemy[i].posicao.y = enemy[i].posicao_backup.y;
+       }
+
+    }
+    else if(enemy[i].up && enemy[i].posicao.y > 60)
+    {
+        enemy[i].posicao_backup.x = enemy[i].posicao.x;
+        enemy[i].posicao_backup.y = enemy[i].posicao.y;
+
+        enemy[i].posicao.y = enemy[i].posicao.y - 3;
+
+        enemy[i].enemy_rec.x = enemy[i].posicao.x;
+        enemy[i].enemy_rec.y = enemy[i].posicao.y;
+
+        enemy[i].rotation = 0;
+
+        if(verifica_colisao_inimigo(enemy, tij))
+       {
+           enemy[i].posicao.x = enemy[i].posicao_backup.x;
+           enemy[i].posicao.y = enemy[i].posicao_backup.y;
+       }
+
+    }
+    else if(enemy[i].down && enemy[i].posicao.y + enemy[i].size.y < SCREEN_HEIGHT)
+    {
+        enemy[i].posicao_backup.x = enemy[i].posicao.x;
+        enemy[i].posicao_backup.y = enemy[i].posicao.y;
+
+        enemy[i].posicao.y = enemy[i].posicao.y + 3;
+
+        enemy[i].enemy_rec.x = enemy[i].posicao.x;
+        enemy[i].enemy_rec.y = enemy[i].posicao.y;
+
+        enemy[i].rotation = 180;
+
+        if(verifica_colisao_inimigo(enemy, tij))
+       {
+           enemy[i].posicao.x = enemy[i].posicao_backup.x;
+           enemy[i].posicao.y = enemy[i].posicao_backup.y;
+       }
+
+    }
+}
+bool verifica_colisao_inimigo(INIMIGOS enemy[], TIJOLOS tij[][COLUNAS])
+{
+    bool colisao = false;
+
+    for(int k = 0; k < MAX_INIMIGOS; k++)
+    {
+    for(int i = 0; i <  LINHAS; i++)
+    {
+        for(int j = 0; j < COLUNAS; j++)
+        {
+            if(CheckCollisionRecs(enemy[k].enemy_rec, tij[i][j].tij_rec) && tij[i][j].ativo)
+            {
+                colisao = true;
+            }
+        }
+    }
+    }
+
+    return colisao;
+}
+
+bool spawn_inimigos(int *frame_enemy, int *segundos_frame_enemy)
+{
+    bool spawn_ok = false;
+
+    *frame_enemy = *frame_enemy + 1;
+    if(*frame_enemy >= 60)
+    {
+        *frame_enemy = 0;
+        *segundos_frame_enemy = *segundos_frame_enemy + 1;
+    }
+    if(*segundos_frame_enemy >= 5)
+    {
+        *frame_enemy = 0;
+        *segundos_frame_enemy = 0;
+        spawn_ok = true;
+    }
+
+    return spawn_ok;
+}
+
 // tentei fazer um negocio aqui e nao deu
 /*void desenha_menu(int TELA)
 {
