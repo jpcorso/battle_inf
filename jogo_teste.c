@@ -159,9 +159,9 @@ bool verifica_colisao_inimigo_inimigo(INIMIGOS[], int);
 //Essa funcao possibilita a insercao de um nome de usuario ao player
 void coloca_username(JOGADOR*);
 //Essa função salva o jogo
-void save_game(JOGADOR*, INIMIGOS[], TIJOLOS[][COLUNAS], CELULA*);
+void save_game(JOGADOR*, INIMIGOS[], TIJOLOS[][COLUNAS], CELULA*, FILE *arqSave);
 //Essa função le o save do jogo
-void read_save(JOGADOR*, INIMIGOS[], TIJOLOS[][COLUNAS], CELULA*);
+void read_save(JOGADOR*, INIMIGOS[], TIJOLOS[][COLUNAS], CELULA*, FILE *arqSave);
 
 
 
@@ -192,6 +192,9 @@ int main(void)
     PROJETIL enemy_bullets[MAX_INIMIGOS];
     CELULA energia;
     INIMIGOS enemy[MAX_INIMIGOS];
+
+    //poteiro do arquivo para save
+    FILE *arqSave;
 
     // Inicializacao do jogador
     player.posicao = (Vector2) {(float)SCREEN_WIDTH / 2 , (float)SCREEN_HEIGHT / 2};
@@ -340,8 +343,6 @@ int main(void)
     int TELA = 0;
     int tempo_menu = 0;
 
-    FILE *arqSave;
-
     bool sair_loop = false;
 
     coloca_tijolo(tij, &player);
@@ -354,12 +355,11 @@ int main(void)
         if(TELA < 5)
         {
             desenha_menu(&TELA, &sair_loop);
-        
         }
         //Tentei fazer a tela de carregar mas n deu
-        /*else if(TELA = 4){
-            read_save(&player, enemy, tij, &energia);
-            save_game(&player, enemy, tij, &energia);
+        else if(TELA = 7){
+            read_save(&player, enemy, tij, &energia, arqSave);
+            save_game(&player, enemy, tij, &energia, arqSave);
             movimento_jogador(&player, tij);
             movimento_projetil(&player, bullets, tij);
             inimigos(enemy, &frame_enemy, &segundos_frame_enemy, &numero_inimigos, tij, bullets, enemy_bullets, &player);
@@ -373,17 +373,17 @@ int main(void)
             colisao_player_projetil_inimigo(&player, enemy, enemy_bullets);
             colisao_projetil_projetil(bullets, enemy, enemy_bullets);
             passa_nivel(enemy, &tempo_nivel, tijolosText, tij, &nivel, &player, &numero_inimigos);
-            }*/
-        else if(TELA = 6)
-        {
-            coloca_username(&player);
-            if(IsKeyDown(KEY_ENTER)){
-            TELA = 5;
             }
-        }
+        //else if(TELA = 6)
+       // {
+            //coloca_username(&player);
+            //if(IsKeyDown(KEY_ENTER)){
+                //TELA = 5;
+            //}
+        //}
         else
         {   
-            save_game(&player, enemy, tij, &energia);
+            save_game(&player, enemy, tij, &energia, arqSave);
             movimento_jogador(&player, tij);
             movimento_projetil(&player, bullets, tij);
             inimigos(enemy, &frame_enemy, &segundos_frame_enemy, &numero_inimigos, tij, bullets, enemy_bullets, &player);
@@ -434,6 +434,10 @@ void desenha_menu(int *TELA, bool *sair_loop)
                 if(IsKeyPressed(KEY_UP))
                 {
                     *TELA = *TELA - 1;
+                }
+                if(IsKeyPressed(KEY_ENTER))
+                {
+                    *TELA = 7;
                 }
             }break;
         case 2:
@@ -1993,9 +1997,8 @@ bool IsAnyKeyPressed()
     return keyPressed;
 }
 
-void save_game(JOGADOR *player, INIMIGOS enemy[], TIJOLOS tij[][COLUNAS], CELULA *energia){
+void save_game(JOGADOR *player, INIMIGOS enemy[], TIJOLOS tij[][COLUNAS], CELULA *energia, FILE *arqSave){
     if(IsKeyDown(KEY_S)){
-        FILE *arqSave;
         arqSave = fopen("save.bin", "wb");
         fwrite(&player, sizeof(JOGADOR), 1, arqSave);
         fwrite(&enemy, sizeof(INIMIGOS), 1, arqSave);
@@ -2006,14 +2009,11 @@ void save_game(JOGADOR *player, INIMIGOS enemy[], TIJOLOS tij[][COLUNAS], CELULA
     }
 }
 
-void read_save(JOGADOR *player, INIMIGOS enemy[], TIJOLOS tij[][COLUNAS], CELULA *energia){
-    FILE *arqSave;
-        arqSave = fopen("save.bin", "rb");
-        fread(&player, sizeof(JOGADOR), 1, arqSave);
-        fread(&enemy, sizeof(INIMIGOS), 1, arqSave);
-        fread(&tij, sizeof(TIJOLOS), 1, arqSave);
-        fread(&energia, sizeof(CELULA), 1, arqSave);
-        //fclose(arqSave);
+void read_save(JOGADOR *player, INIMIGOS enemy[], TIJOLOS tij[][COLUNAS], CELULA *energia, FILE *arqSave){
+    arqSave = fopen("save.bin", "rb");
+    fread(&player, sizeof(JOGADOR), 1, arqSave);
+    fread(&enemy, sizeof(INIMIGOS), 1, arqSave);
+    fread(&tij, sizeof(TIJOLOS), 1, arqSave);
+    fread(&energia, sizeof(CELULA), 1, arqSave);
+    fclose(arqSave);
 }
-
-
