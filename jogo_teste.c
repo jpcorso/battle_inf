@@ -160,6 +160,8 @@ bool verifica_colisao_inimigo_inimigo(INIMIGOS[], int);
 void coloca_username(JOGADOR*);
 //Essa função salva o jogo
 void save_game(JOGADOR*, INIMIGOS[], TIJOLOS[][COLUNAS], CELULA*);
+//Essa função le o save do jogo
+void read_save(JOGADOR*, INIMIGOS[], TIJOLOS[][COLUNAS], CELULA*);
 
 
 
@@ -352,7 +354,26 @@ int main(void)
         if(TELA < 5)
         {
             desenha_menu(&TELA, &sair_loop);
+        
         }
+        //Tentei fazer a tela de carregar mas n deu
+        /*else if(TELA = 4){
+            read_save(&player, enemy, tij, &energia);
+            save_game(&player, enemy, tij, &energia);
+            movimento_jogador(&player, tij);
+            movimento_projetil(&player, bullets, tij);
+            inimigos(enemy, &frame_enemy, &segundos_frame_enemy, &numero_inimigos, tij, bullets, enemy_bullets, &player);
+            modo_perseguicao(&player, enemy);
+
+            draw(&nivel, &player, bullets, tij, &energia, enemy, enemy_bullets,
+            tijolo_textura, celulasText, tanquePlayer, projetilText, tanqueEnemy, tanqueEnemyProjetil, vidas, &TELA);
+
+            celulasEnergia(&energia, &player, bullets, &frame, &segundos_frame, tij);
+            colisao_player_enemy(&player, enemy);
+            colisao_player_projetil_inimigo(&player, enemy, enemy_bullets);
+            colisao_projetil_projetil(bullets, enemy, enemy_bullets);
+            passa_nivel(enemy, &tempo_nivel, tijolosText, tij, &nivel, &player, &numero_inimigos);
+            }*/
         else if(TELA = 6)
         {
             coloca_username(&player);
@@ -1983,6 +2004,16 @@ void save_game(JOGADOR *player, INIMIGOS enemy[], TIJOLOS tij[][COLUNAS], CELULA
         DrawText("Game saved", ((SCREEN_WIDTH - MeasureText("Game saved", 15))/2), 330, 15, WHITE);
         fclose(arqSave);
     }
+}
+
+void read_save(JOGADOR *player, INIMIGOS enemy[], TIJOLOS tij[][COLUNAS], CELULA *energia){
+    FILE *arqSave;
+        arqSave = fopen("save.bin", "rb");
+        fread(&player, sizeof(JOGADOR), 1, arqSave);
+        fread(&enemy, sizeof(INIMIGOS), 1, arqSave);
+        fread(&tij, sizeof(TIJOLOS), 1, arqSave);
+        fread(&energia, sizeof(CELULA), 1, arqSave);
+        //fclose(arqSave);
 }
 
 
