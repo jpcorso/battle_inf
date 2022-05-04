@@ -12,6 +12,7 @@
 #define LINHAS 15
 #define LAST_LEVEL 2
 #define COLUNAS 40 + 1 //Esse +1 pq quando chega no final tem um comando ou algo parecido pra indicar nova linha, por isso antes ficava uma escada
+#define MAX_LETRAS 9
 
 // Struct para armazenar informacoes do jogador
 typedef struct
@@ -27,12 +28,14 @@ typedef struct
     bool down;
 
     int nivel;
+    int nivel1_backup;
 
     int vidas;
     int score;
     int velocidade;
     float boost_velocidade;
     int rotation;
+    char username[MAX_LETRAS + 1];
 
 }JOGADOR;
 
@@ -110,7 +113,7 @@ void movimento_jogador(JOGADOR*, TIJOLOS[][COLUNAS]);
 
 // Essa funcao desenha o jogo
 void draw(int*, JOGADOR*, PROJETIL[], TIJOLOS[][COLUNAS], CELULA*, INIMIGOS[], PROJETIL[],
-          Texture2D, Texture2D, Texture2D, Texture2D, Texture2D, Texture2D, Texture2D);
+        Texture2D, Texture2D, Texture2D, Texture2D, Texture2D, Texture2D, Texture2D, int*);
 // Essa funcao desenha o menu do jogo
 void desenha_menu(int*, bool*);
 
@@ -153,6 +156,11 @@ bool verifica_colisao_inimigo_tij(INIMIGOS[], TIJOLOS[][COLUNAS], int);
 bool verifica_colisao_inimigo_projetil(INIMIGOS[], PROJETIL[], int, JOGADOR*);
 // Essa funcao verifica colisao entre inimigos e inimigos
 bool verifica_colisao_inimigo_inimigo(INIMIGOS[], int);
+//Essa funcao possibilita a insercao de um nome de usuario ao player
+void coloca_username(JOGADOR*);
+//Essa função salva o jogo
+void save_game(JOGADOR*, INIMIGOS[], TIJOLOS[][COLUNAS], CELULA*);
+
 
 
 // Essa funçao verifica colisao entre o player e tijolos
@@ -197,6 +205,7 @@ int main(void)
     player.score = 0;
     player.nivel = 0;
     player.vidas = 3;
+    player.username[MAX_LETRAS + 1] = '\0';
 
     player.right = true;
     player.left = false;
@@ -329,6 +338,8 @@ int main(void)
     int TELA = 0;
     int tempo_menu = 0;
 
+    FILE *arqSave;
+
     bool sair_loop = false;
 
     coloca_tijolo(tij, &player);
@@ -342,15 +353,23 @@ int main(void)
         {
             desenha_menu(&TELA, &sair_loop);
         }
-        else
+        else if(TELA = 6)
         {
+            coloca_username(&player);
+            if(IsKeyDown(KEY_ENTER)){
+            TELA = 5;
+            }
+        }
+        else
+        {   
+            save_game(&player, enemy, tij, &energia);
             movimento_jogador(&player, tij);
             movimento_projetil(&player, bullets, tij);
             inimigos(enemy, &frame_enemy, &segundos_frame_enemy, &numero_inimigos, tij, bullets, enemy_bullets, &player);
             modo_perseguicao(&player, enemy);
 
             draw(&nivel, &player, bullets, tij, &energia, enemy, enemy_bullets,
-                tijolo_textura, celulasText, tanquePlayer, projetilText, tanqueEnemy, tanqueEnemyProjetil, vidas);
+                tijolo_textura, celulasText, tanquePlayer, projetilText, tanqueEnemy, tanqueEnemyProjetil, vidas, &TELA);
 
             celulasEnergia(&energia, &player, bullets, &frame, &segundos_frame, tij);
             colisao_player_enemy(&player, enemy);
@@ -382,7 +401,7 @@ void desenha_menu(int *TELA, bool *sair_loop)
                 }
                 if(IsKeyPressed(KEY_ENTER))
                 {
-                    *TELA = 5;
+                    *TELA = 6;
                 }
             }break;
         case 1:
@@ -692,12 +711,13 @@ void movimento_jogador(JOGADOR *player, TIJOLOS tij[][COLUNAS])
 // essa funcao desenha o jogo
 void draw(int *nivel, JOGADOR *player, PROJETIL bullets[], TIJOLOS tij[][COLUNAS], CELULA *energia, INIMIGOS enemy[], PROJETIL enemy_bullets[],
           Texture2D tijolo_textura, Texture2D celulasText, Texture2D tanquePlayer,
-          Texture2D projetilText, Texture2D tanqueEnemy, Texture2D tanqueEnemyProjetil, Texture2D vidas)
+          Texture2D projetilText, Texture2D tanqueEnemy, Texture2D tanqueEnemyProjetil, Texture2D vidas, int *TELA)
 {
     // Comeca desenho
     BeginDrawing();
         ClearBackground(BLACK);
 
+    
         // desenha o cabecalho do jogo
         DrawRectangle(0, 0, 1000, 60, GRAY);
         if(*nivel == 1)
@@ -710,6 +730,17 @@ void draw(int *nivel, JOGADOR *player, PROJETIL bullets[], TIJOLOS tij[][COLUNAS
         }
 
         // desenha vidas
+        if(player->vidas <= 0)
+        {
+            DrawText("GAME OVER", ((SCREEN_WIDTH - MeasureText("GAME OVER", 70))/2), 330, 70, RED);
+            DrawText("Pressione ENTER para voltar ao menu", ((SCREEN_WIDTH - MeasureText("Pressione ENTER para voltar ao menu", 20))/2), 405, 20, WHITE);
+            player->velocidade = 0.0f;
+            bullets->ativo = false;
+            if(IsKeyDown(KEY_ENTER)){
+                player->nivel1_backup = player->nivel;
+                //Retornar para o menu
+            }
+        }
         if(player->vidas >= 1)
         {
             DrawTexturePro(vidas, (Rectangle) {0, 0, 700, 700}, (Rectangle) {0, 0, 50, 50}, (Vector2){0, 0}, 0, RAYWHITE);
@@ -1849,6 +1880,108 @@ void passa_nivel(INIMIGOS enemy[], int *tempo_nivel, char tijolosText[], TIJOLOS
         coloca_tijolo(tij, player);
         // reseta tempo do nivel
         *tempo_nivel = 0;
+    }
+}
+
+    void coloca_username(JOGADOR *player){
+        int letterCount = 0;
+        Rectangle textBox = { SCREEN_WIDTH/2.0f - 100, 180, 225, 50 };
+        bool mouseOnText = false;
+        int framesCounter = 0;
+        SetTargetFPS(10);
+         // Update
+        //----------------------------------------------------------------------------------
+        if (CheckCollisionPointRec(GetMousePosition(), textBox)) mouseOnText = true;
+        else mouseOnText = false;
+
+        if (mouseOnText)
+        {
+            // Set the window's cursor to the I-Beam
+            SetMouseCursor(MOUSE_CURSOR_IBEAM);
+
+            // Pega a tecla pressionada
+            int key = GetCharPressed();
+
+            // checa se mais caracteres foram colocados no mesmo frame
+            while (key > 0)
+            {
+                // NOTE: Only allow keys in range [32..125]
+                if ((key >= 32) && (key <= 125) && (letterCount < MAX_LETRAS))
+                {
+                    player->username[letterCount] = (char)key;
+                    player->username[letterCount+1] = '\0'; // adiciona \0 no final da string
+                    letterCount++;
+                }
+
+                key = GetCharPressed();  // checa proximo caractere da fila
+            }
+
+            if(IsKeyPressed(KEY_BACKSPACE))
+            {
+                letterCount--;
+                if (letterCount < 0) letterCount = 0;
+                player->username[letterCount] = '\0';
+            }
+        }
+        else SetMouseCursor(MOUSE_CURSOR_DEFAULT);
+
+        if(mouseOnText){
+            framesCounter++;
+        }
+        else{
+            framesCounter = 0;
+        }
+        //----------------------------------------------------------------------------------
+
+        // desenha
+        //----------------------------------------------------------------------------------
+        BeginDrawing();
+
+            ClearBackground(BLACK);
+
+            DrawText("COLOQUE O MOUSE SOBRE A CAIXA!", 330, 140, 20, GRAY);
+
+            DrawRectangleRec(textBox, LIGHTGRAY);
+            if (mouseOnText) DrawRectangleLines((int)textBox.x, (int)textBox.y, (int)textBox.width, (int)textBox.height, RED);
+            else DrawRectangleLines((int)textBox.x, (int)textBox.y, (int)textBox.width, (int)textBox.height, DARKGRAY);
+
+            DrawText(player->username, (int)textBox.x + 5, (int)textBox.y + 8, 40, MAROON);
+
+            DrawText(TextFormat("Número de caracteres: %i/%i", letterCount, MAX_LETRAS), 368, 240, 20, DARKGRAY);
+
+            if (mouseOnText)
+            {
+                if (letterCount < MAX_LETRAS)
+                {
+                    // desenha underline para identificar onde irá escrever
+                    if (((framesCounter/20)%2) == 0) DrawText("_", (int)textBox.x + 8 + MeasureText(player->username, 40), (int)textBox.y + 12, 40, MAROON);
+                }
+                else DrawText("Pressione BACKSPACE para deletar caracteres...", 200, 330, 20, WHITE);
+            }
+
+        EndDrawing();
+    }
+
+bool IsAnyKeyPressed()
+{
+    bool keyPressed = false;
+    int key = GetKeyPressed();
+
+    if ((key >= 32) && (key <= 126)) keyPressed = true;
+
+    return keyPressed;
+}
+
+void save_game(JOGADOR *player, INIMIGOS enemy[], TIJOLOS tij[][COLUNAS], CELULA *energia){
+    if(IsKeyDown(KEY_S)){
+        FILE *arqSave;
+        arqSave = fopen("save.bin", "wb");
+        fwrite(&player, sizeof(JOGADOR), 1, arqSave);
+        fwrite(&enemy, sizeof(INIMIGOS), 1, arqSave);
+        fwrite(&tij, sizeof(TIJOLOS), 1, arqSave);
+        fwrite(&energia, sizeof(CELULA), 1, arqSave);
+        DrawText("Game saved", ((SCREEN_WIDTH - MeasureText("Game saved", 15))/2), 330, 15, WHITE);
+        fclose(arqSave);
     }
 }
 
