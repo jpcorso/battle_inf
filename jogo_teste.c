@@ -35,7 +35,6 @@ typedef struct
     int velocidade;
     float boost_velocidade;
     int rotation;
-    char username[MAX_LETRAS + 1];
 
 }JOGADOR;
 
@@ -105,6 +104,14 @@ typedef struct
 
 }CELULA;
 
+typedef struct highscores
+{
+    int pontos;
+    char username[MAX_LETRAS + 1];
+
+}HIGHSCORES;
+
+
 // Essa funcao calcula se determinado bloco deve ser colocado ou nao
 void coloca_tijolo(TIJOLOS[][COLUNAS], JOGADOR*);
 
@@ -157,11 +164,11 @@ bool verifica_colisao_inimigo_projetil(INIMIGOS[], PROJETIL[], int, JOGADOR*);
 // Essa funcao verifica colisao entre inimigos e inimigos
 bool verifica_colisao_inimigo_inimigo(INIMIGOS[], int);
 //Essa funcao possibilita a insercao de um nome de usuario ao player
-void coloca_username(JOGADOR*);
+void coloca_username(HIGHSCORES*);
 //Essa função salva o jogo
-void save_game(JOGADOR*, INIMIGOS[], TIJOLOS[][COLUNAS], CELULA*, FILE *arqSave);
+void save_game(JOGADOR*, INIMIGOS[], TIJOLOS[][COLUNAS], CELULA*, FILE *arqSave, PROJETIL[]);
 //Essa função le o save do jogo
-void read_save(JOGADOR*, INIMIGOS[], TIJOLOS[][COLUNAS], CELULA*, FILE *arqSave);
+void read_save(JOGADOR*, INIMIGOS[], TIJOLOS[][COLUNAS], CELULA*, FILE *arqSave, PROJETIL[]);
 
 
 
@@ -192,6 +199,7 @@ int main(void)
     PROJETIL enemy_bullets[MAX_INIMIGOS];
     CELULA energia;
     INIMIGOS enemy[MAX_INIMIGOS];
+    HIGHSCORES ranking;
 
     //poteiro do arquivo para save
     FILE *arqSave;
@@ -210,12 +218,14 @@ int main(void)
     player.score = 0;
     player.nivel = 0;
     player.vidas = 3;
-    player.username[MAX_LETRAS + 1] = '\0';
 
     player.right = true;
     player.left = false;
     player.up = false;
     player.down = false;
+
+    //inicialização para o ranking
+    ranking.username[MAX_LETRAS + 1] = '\0';
 
     // Inicializacao dos inimigos
     for(int i = 0; i < MAX_INIMIGOS; i++)
@@ -357,9 +367,9 @@ int main(void)
             desenha_menu(&TELA, &sair_loop);
         }
         //Tentei fazer a tela de carregar mas n deu
-        else if(TELA = 7){
-            read_save(&player, enemy, tij, &energia, arqSave);
-            save_game(&player, enemy, tij, &energia, arqSave);
+        else if(TELA == 7){
+            read_save(&player, enemy, tij, &energia, arqSave, enemy_bullets);
+            save_game(&player, enemy, tij, &energia, arqSave, enemy_bullets);
             movimento_jogador(&player, tij);
             movimento_projetil(&player, bullets, tij);
             inimigos(enemy, &frame_enemy, &segundos_frame_enemy, &numero_inimigos, tij, bullets, enemy_bullets, &player);
@@ -374,16 +384,18 @@ int main(void)
             colisao_projetil_projetil(bullets, enemy, enemy_bullets);
             passa_nivel(enemy, &tempo_nivel, tijolosText, tij, &nivel, &player, &numero_inimigos);
             }
-        //else if(TELA = 6)
-       // {
-            //coloca_username(&player);
+        //else if(TELA == 6)
+        //{
+            //coloca_username(&ranking);
             //if(IsKeyDown(KEY_ENTER)){
                 //TELA = 5;
             //}
         //}
         else
         {   
-            save_game(&player, enemy, tij, &energia, arqSave);
+            if(IsKeyPressed(KEY_S)){
+                save_game(&player, enemy, tij, &energia, arqSave, enemy_bullets);
+            }
             movimento_jogador(&player, tij);
             movimento_projetil(&player, bullets, tij);
             inimigos(enemy, &frame_enemy, &segundos_frame_enemy, &numero_inimigos, tij, bullets, enemy_bullets, &player);
@@ -742,7 +754,6 @@ void draw(int *nivel, JOGADOR *player, PROJETIL bullets[], TIJOLOS tij[][COLUNAS
     BeginDrawing();
         ClearBackground(BLACK);
 
-    
         // desenha o cabecalho do jogo
         DrawRectangle(0, 0, 1000, 60, GRAY);
         if(*nivel == 1)
@@ -758,12 +769,12 @@ void draw(int *nivel, JOGADOR *player, PROJETIL bullets[], TIJOLOS tij[][COLUNAS
         if(player->vidas <= 0)
         {
             DrawText("GAME OVER", ((SCREEN_WIDTH - MeasureText("GAME OVER", 70))/2), 330, 70, RED);
-            DrawText("Pressione ENTER para voltar ao menu", ((SCREEN_WIDTH - MeasureText("Pressione ENTER para voltar ao menu", 20))/2), 405, 20, WHITE);
             player->velocidade = 0.0f;
             bullets->ativo = false;
             if(IsKeyDown(KEY_ENTER)){
                 player->nivel1_backup = player->nivel;
                 //Retornar para o menu
+                *TELA = 0;
             }
         }
         if(player->vidas >= 1)
@@ -1908,7 +1919,7 @@ void passa_nivel(INIMIGOS enemy[], int *tempo_nivel, char tijolosText[], TIJOLOS
     }
 }
 
-    void coloca_username(JOGADOR *player){
+    void coloca_username(HIGHSCORES *ranking){
         int letterCount = 0;
         Rectangle textBox = { SCREEN_WIDTH/2.0f - 100, 180, 225, 50 };
         bool mouseOnText = false;
@@ -1933,8 +1944,8 @@ void passa_nivel(INIMIGOS enemy[], int *tempo_nivel, char tijolosText[], TIJOLOS
                 // NOTE: Only allow keys in range [32..125]
                 if ((key >= 32) && (key <= 125) && (letterCount < MAX_LETRAS))
                 {
-                    player->username[letterCount] = (char)key;
-                    player->username[letterCount+1] = '\0'; // adiciona \0 no final da string
+                    ranking->username[letterCount] = (char)key;
+                    ranking->username[letterCount+1] = '\0'; // adiciona \0 no final da string
                     letterCount++;
                 }
 
@@ -1945,7 +1956,7 @@ void passa_nivel(INIMIGOS enemy[], int *tempo_nivel, char tijolosText[], TIJOLOS
             {
                 letterCount--;
                 if (letterCount < 0) letterCount = 0;
-                player->username[letterCount] = '\0';
+                ranking->username[letterCount] = '\0';
             }
         }
         else SetMouseCursor(MOUSE_CURSOR_DEFAULT);
@@ -1970,7 +1981,7 @@ void passa_nivel(INIMIGOS enemy[], int *tempo_nivel, char tijolosText[], TIJOLOS
             if (mouseOnText) DrawRectangleLines((int)textBox.x, (int)textBox.y, (int)textBox.width, (int)textBox.height, RED);
             else DrawRectangleLines((int)textBox.x, (int)textBox.y, (int)textBox.width, (int)textBox.height, DARKGRAY);
 
-            DrawText(player->username, (int)textBox.x + 5, (int)textBox.y + 8, 40, MAROON);
+            DrawText(ranking->username, (int)textBox.x + 5, (int)textBox.y + 8, 40, MAROON);
 
             DrawText(TextFormat("Número de caracteres: %i/%i", letterCount, MAX_LETRAS), 368, 240, 20, DARKGRAY);
 
@@ -1979,7 +1990,7 @@ void passa_nivel(INIMIGOS enemy[], int *tempo_nivel, char tijolosText[], TIJOLOS
                 if (letterCount < MAX_LETRAS)
                 {
                     // desenha underline para identificar onde irá escrever
-                    if (((framesCounter/20)%2) == 0) DrawText("_", (int)textBox.x + 8 + MeasureText(player->username, 40), (int)textBox.y + 12, 40, MAROON);
+                    if (((framesCounter/20)%2) == 0) DrawText("_", (int)textBox.x + 8 + MeasureText(ranking->username, 40), (int)textBox.y + 12, 40, MAROON);
                 }
                 else DrawText("Pressione BACKSPACE para deletar caracteres...", 200, 330, 20, WHITE);
             }
@@ -1997,23 +2008,33 @@ bool IsAnyKeyPressed()
     return keyPressed;
 }
 
-void save_game(JOGADOR *player, INIMIGOS enemy[], TIJOLOS tij[][COLUNAS], CELULA *energia, FILE *arqSave){
-    if(IsKeyDown(KEY_S)){
+void save_game(JOGADOR *player, INIMIGOS enemy[], TIJOLOS tij[][COLUNAS], CELULA *energia, FILE *arqSave, PROJETIL enemy_bullets[]){
         arqSave = fopen("save.bin", "wb");
-        fwrite(&player, sizeof(JOGADOR), 1, arqSave);
-        fwrite(&enemy, sizeof(INIMIGOS), 1, arqSave);
-        fwrite(&tij, sizeof(TIJOLOS), 1, arqSave);
-        fwrite(&energia, sizeof(CELULA), 1, arqSave);
-        DrawText("Game saved", ((SCREEN_WIDTH - MeasureText("Game saved", 15))/2), 330, 15, WHITE);
+        if(arqSave == NULL){
+            printf("Erro na escrita!\n");
+        }
+        else{
+            fwrite(&player, sizeof(JOGADOR), 1, arqSave);
+            fwrite(&enemy, sizeof(INIMIGOS), 1, arqSave);
+            fwrite(&tij, sizeof(TIJOLOS), 1, arqSave);
+            fwrite(&energia, sizeof(CELULA), 1, arqSave);
+            fwrite(&enemy_bullets, sizeof(PROJETIL), 1, arqSave);
+            DrawText("Jogo salvo", ((SCREEN_WIDTH - MeasureText("Jogo salvo", 15))/2), 330, 15, WHITE);
+        }
         fclose(arqSave);
-    }
 }
 
-void read_save(JOGADOR *player, INIMIGOS enemy[], TIJOLOS tij[][COLUNAS], CELULA *energia, FILE *arqSave){
+void read_save(JOGADOR *player, INIMIGOS enemy[], TIJOLOS tij[][COLUNAS], CELULA *energia, FILE *arqSave, PROJETIL enemy_bullets[]){
     arqSave = fopen("save.bin", "rb");
-    fread(&player, sizeof(JOGADOR), 1, arqSave);
-    fread(&enemy, sizeof(INIMIGOS), 1, arqSave);
-    fread(&tij, sizeof(TIJOLOS), 1, arqSave);
-    fread(&energia, sizeof(CELULA), 1, arqSave);
-    fclose(arqSave);
+    if(arqSave == NULL){
+        printf("Erro na leitura!\n");
+    }
+    else{
+        fread(&player, sizeof(JOGADOR), 1, arqSave);
+        fread(&enemy, sizeof(INIMIGOS), 1, arqSave);
+        fread(&tij, sizeof(TIJOLOS), 1, arqSave);
+        fread(&energia, sizeof(CELULA), 1, arqSave);
+        fread(&enemy_bullets, sizeof(PROJETIL), 1, arqSave);
+        fclose(arqSave);
+    }
 }
